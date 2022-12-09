@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@discordjs/rest": "^1.0.1",
+    "discord.js": "^14.1.2",
+    "dotenv": "^16.0.3",
+    "eslint-config-prettier": "^8.5.0",
+    "ky": "^0.25.1",
+    "ky-universal": "^0.8.2",
+    "prettier": "^2.7.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.21.0"
+  }
+}
