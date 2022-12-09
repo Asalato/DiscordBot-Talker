@@ -1,19 +1,20 @@
-const fs = require('fs');
+const fs = require('node:fs');
 
 let data = null;
+const fileName = './data/.guildStore';
 
 module.exports = class GuildStore {
     static #save() {
-        fs.writeFileSync('.guildStore', JSON.stringify(data));
+        fs.writeFileSync(fileName, JSON.stringify(data));
     }
 
     static #load() {
-        if (!fs.existsSync('.guildStore')) {
+        if (!fs.existsSync(fileName)) {
             data = [];
             return;
         }
 
-        data = JSON.parse(fs.readFileSync('.guildStore', 'utf-8'));
+        data = JSON.parse(fs.readFileSync(fileName, 'utf-8'));
     }
 
     static async getAllIds() {

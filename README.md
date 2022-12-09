@@ -1,23 +1,25 @@
 # 使い方（雑）
 ## どの起動方法でも共通で必要な作業
 - プロジェクトのclone
-- 環境変数、もしくは`.env`ファイルにDiscord Botのトークンを記述
+- 環境変数、もしくは`.env`ファイルにDiscord BotのトークンとクライアントIDを記述
   - [Discord Developer Portalから取得](https://discordjs.guide/preparations/setting-up-a-bot-application.html#your-bot-s-token)
 
 ```.env
 DISCORD_TOKEN="your-token-here"
+DISCORD_CLIENT_ID="your-client-id-here"
 ```
 
 ### 必要な権限
 - SCOPES
   - bot
   - applications.command
-    - スラッシュコマンドを利用する場合
 - BOT PERMISSIONS
   - Send Messages
   - Read Message History
   - Use Slash Commands
   - Messages/View Channels
+
+機能を増やしたり減らしたりするとこの辺は変わります
 
 ## ローカル環境でビルドして起動する場合（デバッグ用途）
 前提環境：node.js（v16でのみ確認済み）
@@ -45,3 +47,5 @@ Express等で別途パケットの待ちなどを行う場合はFirewallの設�
 
 1. プロジェクトルートでターミナルを起動
 2. `docker-compose up`で実行
+
+コードを編集した後は`docker-compose up --build`にしないと更新されないので注意
