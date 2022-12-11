@@ -15,6 +15,7 @@ module.exports = {
             if (!reference) break;
             lastId = reference.messageId;
         }
+        const isFirstMessage = message.id === lastId;
 
         const sessionToken = await TokenStore.getSessionToken();
         if (!sessionToken) {
@@ -68,7 +69,9 @@ module.exports = {
         }, 1500);
 
         try {
-            const reply = await api.sendMessage(message.content, opts);
+            let text = message.content;
+            if (isFirstMessage) text = `あなたの名前は「${client.user.username}」であり、Discord上でBotとして稼働しています。以降の文に対する応答を、応答文のみで返してください。` + text;
+            const reply = await api.sendMessage(text, opts);
             clearInterval(typing);
 
             if (reply) {
