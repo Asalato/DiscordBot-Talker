@@ -53,12 +53,19 @@ module.exports = {
         if (parentMessageId) opts["parentMessageId"] = parentMessageId;
 
         const typing = setInterval(async () => {
-            if (tempResponseStr) {
-                if (tempResponse) tempResponse.edit(tempResponseStr);
-                else tempResponse = await message.reply(tempResponseStr);
+            try {
+                if (tempResponseStr) {
+                    if (tempResponse) tempResponse.edit(tempResponseStr);
+                    else tempResponse = await message.reply(tempResponseStr);
+                }
+                await message.channel.sendTyping();
+            } catch(error) {
+                console.error(error);
+                clearInterval(typing);
+                if (tempResponse) await tempResponse.delete();
+                await message.reply("```diff\n-何らの問題が発生しました。\n```");
             }
-            await message.channel.sendTyping();
-        }, 500);
+        }, 1000);
 
         try {
             const reply = await api.sendMessage(message.content, opts);
@@ -74,6 +81,7 @@ module.exports = {
         } catch(error) {
             console.error(error);
             clearInterval(typing);
+            if (tempResponse) await tempResponse.delete();
             await message.reply("```diff\n-何らの問題が発生しました。\n```");
         }
     },
