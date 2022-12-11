@@ -65,7 +65,7 @@ module.exports = {
                 if (tempResponse) await tempResponse.delete();
                 await message.reply("```diff\n-何らの問題が発生しました。\n```");
             }
-        }, 1000);
+        }, 1500);
 
         try {
             const reply = await api.sendMessage(message.content, opts);
