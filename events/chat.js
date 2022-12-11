@@ -70,7 +70,7 @@ module.exports = {
 
         try {
             let text = message.content;
-            if (isFirstMessage) text = `あなたの名前は「${client.user.username}」であり、Discord上でBotとして稼働しています。以降の文に対する応答を、応答文のみで返してください。` + text;
+            if (isFirstMessage) text = `Your name is "${client.user.username}" and you are running as a Bot on Discord. Please use this information only when necessary. Please return responses to the following statements in the form of response statements only. ` + text;
             const reply = await api.sendMessage(text, opts);
             clearInterval(typing);
 
