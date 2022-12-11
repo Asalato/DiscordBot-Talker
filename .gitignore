@@ -105,4 +105,4 @@ dist
 
 .env
 
-.guildStore
+data/
