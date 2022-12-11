@@ -28,22 +28,41 @@ module.exports = {
             await message.reply("認証に失敗しました。再度`/set ${SessionID}`コマンドで登録してください");
             return;
         }
+        await api.ensureAuth();
 
         const conversationId = await TokenStore.getConversationId(lastId);
-        const conversation = api.getConversation({conversationId: conversationId});
-        await TokenStore.setConversationId(lastId, conversation.conversationId);
+        const parentMessageId = await TokenStore.getParentMessageId(lastId);
 
         const typing = setInterval(async () => {
             await message.channel.sendTyping();
         }, 8 * 1000);
 
-        conversation.sendMessage(message.content).then(async reply => {
+        let opts = {
+            onConversationResponse: async response => {
+                let _a;
+                if (response.conversation_id) {
+                    await TokenStore.setConversationId(lastId, response.conversation_id);
+                }
+                if ((_a = response.message) == null ? void 0 : _a.id) {
+                    await TokenStore.setParentMessageId(lastId, response.message.id);
+                }
+            }
+        }
+        if (conversationId) opts["conversationId"] = conversationId;
+        if (parentMessageId) opts["parentMessageId"] = parentMessageId;
+
+        try {
+            const reply = await api.sendMessage(message.content, opts);
             clearInterval(typing);
+
             if (reply) {
                 await message.reply(reply);
             } else {
                 await message.reply("```diff\n-何らの問題が発生しました。\n```");
             }
-        })
+        } catch(error) {
+            console.error(error);
+            await message.reply("```diff\n-何らの問題が発生しました。\n```");
+        }
     },
 };

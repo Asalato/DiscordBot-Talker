@@ -29,6 +29,21 @@ module.exports = class TokenStore {
         this.#save();
     }
 
+    static async getParentMessageId(messageId) {
+        if (data == null) this.#load();
+        if (!data.hasOwnProperty("parentMessage")) return undefined;
+        if (!data["parentMessage"].hasOwnProperty(messageId)) return undefined;
+        return data["parentMessage"][messageId];
+    }
+
+    static async setParentMessageId(messageId, conversationId) {
+        if (data == null) this.#load();
+        if (!data.hasOwnProperty("parentMessage")) data["parentMessage"] = {};
+        data["parentMessage"][messageId] = conversationId;
+        if (Object.keys(data["parentMessage"]).length > 100) data["parentMessage"].shift();
+        this.#save();
+    }
+
     static async getConversationId(messageId) {
         if (data == null) this.#load();
         if (!data.hasOwnProperty("conversations")) return undefined;
@@ -40,8 +55,7 @@ module.exports = class TokenStore {
         if (data == null) this.#load();
         if (!data.hasOwnProperty("conversations")) data["conversations"] = {};
         data["conversations"][messageId] = conversationId;
-
+        if (Object.keys(data["conversations"]).length > 100) data["conversations"].shift();
         this.#save();
-        console.log(`Add new Conversation Id: ${conversationId}`);
     }
 }
