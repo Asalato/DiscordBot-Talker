@@ -40,7 +40,7 @@ module.exports = class TokenStore {
         if (data == null) this.#load();
         if (!data.hasOwnProperty("parentMessage")) data["parentMessage"] = {};
         data["parentMessage"][messageId] = conversationId;
-        if (Object.keys(data["parentMessage"]).length > 100) data["parentMessage"].shift();
+        if (Object.keys(data["parentMessage"]).length > 20) data["parentMessage"].shift();
         this.#save();
     }
 
@@ -55,7 +55,7 @@ module.exports = class TokenStore {
         if (data == null) this.#load();
         if (!data.hasOwnProperty("conversations")) data["conversations"] = {};
         data["conversations"][messageId] = conversationId;
-        if (Object.keys(data["conversations"]).length > 100) data["conversations"].shift();
+        if (Object.keys(data["conversations"]).length > 20) data["conversations"].shift();
         this.#save();
     }
 }

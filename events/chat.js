@@ -33,35 +33,47 @@ module.exports = {
         const conversationId = await TokenStore.getConversationId(lastId);
         const parentMessageId = await TokenStore.getParentMessageId(lastId);
 
-        const typing = setInterval(async () => {
-            await message.channel.sendTyping();
-        }, 8 * 1000);
-
+        let tempResponse = undefined;
+        let tempResponseStr = undefined;
         let opts = {
-            onConversationResponse: async response => {
+            onConversationResponse: async res => {
                 let _a;
-                if (response.conversation_id) {
-                    await TokenStore.setConversationId(lastId, response.conversation_id);
+                if (res.conversation_id) {
+                    await TokenStore.setConversationId(lastId, res.conversation_id);
                 }
-                if ((_a = response.message) == null ? void 0 : _a.id) {
-                    await TokenStore.setParentMessageId(lastId, response.message.id);
+                if ((_a = res.message) == null ? void 0 : _a.id) {
+                    await TokenStore.setParentMessageId(lastId, res.message.id);
                 }
+            },
+            onProgress: async text => {
+                tempResponseStr = text;
             }
         }
         if (conversationId) opts["conversationId"] = conversationId;
         if (parentMessageId) opts["parentMessageId"] = parentMessageId;
+
+        const typing = setInterval(async () => {
+            if (tempResponseStr) {
+                if (tempResponse) tempResponse.edit(tempResponseStr);
+                else tempResponse = await message.reply(tempResponseStr);
+            }
+            await message.channel.sendTyping();
+        }, 500);
 
         try {
             const reply = await api.sendMessage(message.content, opts);
             clearInterval(typing);
 
             if (reply) {
+                if (tempResponse) await tempResponse.delete();
                 await message.reply(reply);
             } else {
+                if (tempResponse) await tempResponse.delete();
                 await message.reply("```diff\n-何らの問題が発生しました。\n```");
             }
         } catch(error) {
             console.error(error);
+            clearInterval(typing);
             await message.reply("```diff\n-何らの問題が発生しました。\n```");
         }
     },
