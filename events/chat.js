@@ -70,7 +70,9 @@ module.exports = {
 
         try {
             let text = message.content;
-            if (isFirstMessage) text = `Your name is "${client.user.username}" and you are running as a Bot on Discord. Please use this information only when necessary. Please return responses to the following statements in the form of response statements only. ` + text;
+            if (isFirstMessage) {
+                text = `Your name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${new Date()}. Please use these information only when necessary. Please return responses to the following statements in the form of response statements only. ` + text;
+            }
             const reply = await api.sendMessage(text, opts);
             clearInterval(typing);
 
