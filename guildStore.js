@@ -1,10 +1,15 @@
 const fs = require('node:fs');
+const path = require("node:path");
 
 let data = null;
 const fileName = './data/.guildStore';
 
 module.exports = class GuildStore {
     static #save() {
+        const dirName = path.dirname(fileName);
+        if (!fs.existsSync(dirName)) {
+            fs.mkdirSync(dirName, {recursive: true});
+        }
         fs.writeFileSync(fileName, JSON.stringify(data));
     }
 
