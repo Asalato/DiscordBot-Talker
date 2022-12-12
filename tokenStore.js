@@ -29,6 +29,18 @@ module.exports = class TokenStore {
         this.#save();
     }
 
+    static async getClearanceToken() {
+        if (data == null) this.#load();
+        if (data.hasOwnProperty("clearanceToken")) return data["clearanceToken"];
+        return undefined;
+    }
+
+    static async setClearanceToken(token) {
+        if (data == null) this.#load();
+        data["clearanceToken"] = token;
+        this.#save();
+    }
+
     static async getParentMessageId(messageId) {
         if (data == null) this.#load();
         if (!data.hasOwnProperty("parentMessage")) return undefined;

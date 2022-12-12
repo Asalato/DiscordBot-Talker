@@ -18,13 +18,18 @@ module.exports = {
         const isFirstMessage = message.id === lastId;
 
         const sessionToken = await TokenStore.getSessionToken();
+        const clearanceToken = await TokenStore.getClearanceToken();
         if (!sessionToken) {
             await message.reply("SessionTokenが登録されていません。`/set ${SessionToken}`コマンドで登録してください");
             return;
         }
 
         const {ChatGPTAPI} = await import("chatgpt");
-        const api = new ChatGPTAPI({sessionToken: sessionToken});
+        const api = new ChatGPTAPI({
+            sessionToken: sessionToken,
+            clearanceToken: clearanceToken,
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+        });
         try {
             await api.ensureAuth();
         } catch(error) {
@@ -32,7 +37,7 @@ module.exports = {
             await message.reply("認証に失敗しました。再度`/set ${SessionID}`コマンドで登録してください");
             return;
         }
-        
+
         if (!await api.getIsAuthenticated()) {
             await message.reply("認証に失敗しました。再度`/set ${SessionID}`コマンドで登録してください");
             return;
