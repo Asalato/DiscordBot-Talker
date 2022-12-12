@@ -18,9 +18,9 @@ module.exports = {
         await interaction.deferReply();
 
         try {
-            const session_token = interaction.options.getString('session token');
+            const session_token = interaction.options.getString('session_token');
             await TokenStore.setSessionToken(session_token);
-            const clearance_token = interaction.options.getString('clearance token');
+            const clearance_token = interaction.options.getString('clearance_token');
             await TokenStore.setClearanceToken(clearance_token);
 
             await interaction.editReply("Tokenを登録しました。");
