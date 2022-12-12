@@ -1,5 +1,6 @@
 const TokenStore = require("../tokenStore");
 
+/*
 module.exports = {
     name: 'messageCreate',
     once: false,
@@ -105,3 +106,4 @@ module.exports = {
         }
     },
 };
+*/

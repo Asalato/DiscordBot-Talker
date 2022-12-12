@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("discord.js");
 const TokenStore = require("../tokenStore");
-
+/*
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('set')
@@ -30,3 +30,4 @@ module.exports = {
         }
     },
 };
+*/
