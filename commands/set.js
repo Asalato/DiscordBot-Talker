@@ -6,11 +6,11 @@ module.exports = {
         .setName('set')
         .setDescription('SessionTokenを登録します')
         .addStringOption(option =>
-            option.setName('session token')
+            option.setName('session_token')
                 .setDescription("登録するSessionToken（詳細は https://github.com/transitive-bullshit/chatgpt-api#session-tokens とか参照）")
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('clearance token')
+            option.setName('clearance_token')
                 .setDescription("登録するClearanceToken（詳細は https://github.com/transitive-bullshit/chatgpt-api#session-tokens とか参照）")
                 .setRequired(true)),
     async execute(interaction) {
