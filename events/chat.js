@@ -25,11 +25,11 @@ module.exports = {
 
         const {ChatGPTAPI} = await import("chatgpt");
         const api = new ChatGPTAPI({sessionToken: sessionToken});
+        await api.ensureAuth();
         if (!await api.getIsAuthenticated()) {
             await message.reply("認証に失敗しました。再度`/set ${SessionID}`コマンドで登録してください");
             return;
         }
-        await api.ensureAuth();
 
         const conversationId = await TokenStore.getConversationId(lastId);
         const parentMessageId = await TokenStore.getParentMessageId(lastId);
