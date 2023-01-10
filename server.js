@@ -3,7 +3,6 @@ const path = require('node:path');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const {registerCommands} = require("./register");
 const GuildStore = require("./guildStore");
-const {temporaryMethodThatGetMessageByFetchingLatestChannelPost} = require("./utils");
 require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
