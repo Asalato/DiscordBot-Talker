@@ -44,13 +44,31 @@ module.exports = {
 
             let tempResponse = undefined;
             let tempResponseStr = "";
+            let isEnd = false;
+            let errorStr = undefined;
             const typing = setInterval(async () => {
                 try {
-                    if (tempResponseStr !== "") {
-                        if (tempResponse) tempResponse.edit(tempResponseStr);
-                        else tempResponse = await message.reply(tempResponseStr);
+                    if (errorStr) {
+                        clearInterval(typing);
+                        if (tempResponse) {
+                            await tempResponse.delete();
+                            tempResponse = undefined;
+                        }
+                        await message.reply("```diff\n-" + errorStr + "。\n```");
+                    } else if (isEnd) {
+                        clearInterval(typing);
+                        if (tempResponse) {
+                            await tempResponse.delete();
+                            tempResponse = undefined;
+                        }
+                        await message.reply(tempResponseStr);
+                    } else {
+                        if (tempResponseStr !== "") {
+                            if (tempResponse) tempResponse.edit(tempResponseStr);
+                            else tempResponse = await message.reply(tempResponseStr);
+                        }
+                        await message.channel.sendTyping();
                     }
-                    await message.channel.sendTyping();
                 } catch(error) {
                     console.error(error);
                     clearInterval(typing);
@@ -67,19 +85,16 @@ module.exports = {
                 for (const line of lines) {
                     const str = line.replace(/^data: /, '');
                     if (str === '[DONE]') {
-                        clearInterval(typing);
-                        if (tempResponse) {
-                            await tempResponse.delete();
-                            tempResponse = undefined;
-                        }
-                        await message.reply(tempResponseStr);
+                        isEnd = true;
                         return; // Stream finished
                     }
                     try {
                         const parsed = JSON.parse(str);
                         tempResponseStr += parsed.choices[0].text;
                     } catch(error) {
+                        errorStr = 'Could not JSON parse stream message' + str + error;
                         console.error('Could not JSON parse stream message', str, error);
+                        return;
                     }
                 }
             })
