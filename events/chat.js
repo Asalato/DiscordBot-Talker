@@ -35,8 +35,8 @@ module.exports = {
             const completion = await openai.createCompletion({
                 model: "text-davinci-003",
                 prompt: chatLog,
-                max_tokens: 4096,
-                temperature: 0,
+                max_tokens: 2048,
+                temperature: 0.9,
                 stream: true
             }, {
                 responseType: 'stream'
