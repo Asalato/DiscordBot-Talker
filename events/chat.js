@@ -36,7 +36,7 @@ module.exports = {
                 model: "text-davinci-003",
                 prompt: chatLog,
                 max_tokens: 2048,
-                temperature: 0.9,
+                temperature: 0.2,
                 stream: true
             }, {
                 responseType: 'stream'
