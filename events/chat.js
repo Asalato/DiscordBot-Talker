@@ -54,10 +54,13 @@ module.exports = {
                 } catch(error) {
                     console.error(error);
                     clearInterval(typing);
-                    if (tempResponse) await tempResponse.delete();
+                    if (tempResponse) {
+                        await tempResponse.delete();
+                        tempResponse = undefined;
+                    }
                     await message.reply("```diff\n-何らかの問題が発生しました。\n```");
                 }
-            }, 500);
+            }, 1000);
 
             completion.data.on('data', async data => {
                 const lines = data.toString().split('\n').filter(line => line.trim() !== '');
@@ -65,7 +68,10 @@ module.exports = {
                     const str = line.replace(/^data: /, '');
                     if (str === '[DONE]') {
                         clearInterval(typing);
-                        if (tempResponse) await tempResponse.delete();
+                        if (tempResponse) {
+                            await tempResponse.delete();
+                            tempResponse = undefined;
+                        }
                         await message.reply(tempResponseStr);
                         return; // Stream finished
                     }
