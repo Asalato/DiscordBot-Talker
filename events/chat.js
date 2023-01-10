@@ -35,7 +35,7 @@ module.exports = {
             const completion = await openai.createCompletion({
                 model: "text-davinci-003",
                 prompt: chatLog,
-                max_tokens: 100,
+                max_tokens: 4096,
                 temperature: 0,
                 stream: true
             }, {
@@ -57,7 +57,7 @@ module.exports = {
                     if (tempResponse) await tempResponse.delete();
                     await message.reply("```diff\n-何らかの問題が発生しました。\n```");
                 }
-            }, 1500);
+            }, 500);
 
             completion.data.on('data', async data => {
                 const lines = data.toString().split('\n').filter(line => line.trim() !== '');
