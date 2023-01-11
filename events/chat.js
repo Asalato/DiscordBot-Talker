@@ -37,7 +37,8 @@ module.exports = {
                 prompt: chatLog,
                 max_tokens: 2048,
                 temperature: 0.2,
-                stream: true
+                stream: true,
+                user: message.author.id
             }, {
                 responseType: 'stream'
             })
