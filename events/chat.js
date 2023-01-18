@@ -18,7 +18,7 @@ module.exports = {
         while(true) {
             const lastMessage = await messages.fetch(lastId);
             const lastQuestion = lastMessage.content.replace(`<@${client.user.id}> `, "");
-            chatLog = (isHuman ? "Human: " : "AI: ") + lastQuestion + "\n" + chatLog;
+            chatLog = lastMessage.author.username + ": " + lastQuestion + "\n" + chatLog;
             if (!lastMessage.reference) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
