@@ -23,7 +23,7 @@ module.exports = {
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
         }
-        chatLog += "AI: ";
+        chatLog += client.user.username + ": ";
         chatLog = text + chatLog;
 
         const configuration = new Configuration({
