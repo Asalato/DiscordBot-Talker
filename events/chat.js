@@ -32,7 +32,7 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            const completion = await openai.createCompletion({
+            /*const completion = await openai.createCompletion({
                 model: "text-davinci-003",
                 prompt: chatLog,
                 max_tokens: 2048,
@@ -98,7 +98,27 @@ module.exports = {
                         return;
                     }
                 }
-            })
+            })*/
+
+            const typing = setInterval(async () => {
+                await message.channel.sendTyping();
+            }, 1000);
+
+            openai.createCompletion({
+                model: "text-davinci-003",
+                prompt: chatLog,
+                max_tokens: 2048,
+                temperature: 0.2,
+                user: message.author.id
+            }).then(async (res) => {
+                clearInterval(typing);
+                await message.reply(res.data.choices[0].text);
+            }).catch(async (error) => {
+                clearInterval(typing);
+                console.error(error);
+                await message.reply("```diff\n-何らかの問題が発生しました。\n```");
+            });
+
         } catch (err) {
             console.log(err);
             await message.reply("```diff\n-何らかの問題が発生しました。\n```");
