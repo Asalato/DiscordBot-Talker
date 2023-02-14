@@ -19,7 +19,7 @@ module.exports = {
             const lastMessage = await messages.fetch(lastId);
             const lastQuestion = lastMessage.content.replace(`<@${client.user.id}> `, "");
             chatLog = lastMessage.author.username + ": " + lastQuestion + "\n" + chatLog;
-            if (!lastMessage.reference) break;
+            if (!lastMessage.reference || chatLog.length > 1000) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
         }
@@ -107,7 +107,7 @@ module.exports = {
             openai.createCompletion({
                 model: "text-davinci-003",
                 prompt: chatLog,
-                max_tokens: 2048,
+                max_tokens: 1024,
                 temperature: 0.2,
                 user: message.author.id
             }).then(async (res) => {
