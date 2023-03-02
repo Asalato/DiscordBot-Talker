@@ -1,5 +1,4 @@
 const {Configuration, OpenAIApi} = require("openai");
-const {ChatCompletionRequestMessage} = require("openai/api");
 
 module.exports = {
     name: 'messageCreate',
@@ -20,10 +19,10 @@ module.exports = {
         let isHuman = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
-            const lastQuestion = lastMessage.content.replace(`<@${client.user.id}> `, "");
+            const lastQuestion = lastMessage.content.replace(/<@\S+>/g, "");
             const isBot = lastMessage.author.username === client.user.username;
-            dialog.splice(1, 0, {role: isBot ? "assistant" : "user", content: lastQuestion, name: lastMessage.author.username});
-            if (!lastMessage.reference || chatLog.length > 1000) break;
+            dialog.splice(1, 0, {role: isBot ? "assistant" : "user", content: lastQuestion/*, name: lastMessage.author.username*/});
+            if (!lastMessage.reference || dialog.length > 6) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
         }
@@ -34,9 +33,9 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            const completion = await openai.createChatCompletion({
+            /*const completion = await openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
-                prompt: dialog,
+                messages: dialog,
                 max_tokens: 2048,
                 temperature: 0.2,
                 stream: true,
@@ -100,26 +99,26 @@ module.exports = {
                         return;
                     }
                 }
-            })
+            })*/
 
-            /*const typing = setInterval(async () => {
+            const typing = setInterval(async () => {
                 await message.channel.sendTyping();
             }, 1000);
 
-            openai.createCompletion({
-                model: "text-davinci-003",
-                prompt: chatLog,
-                max_tokens: 1024,
+            openai.createChatCompletion({
+                model: "gpt-3.5-turbo",
+                messages: dialog,
+                max_tokens: 2048,
                 temperature: 0.2,
                 user: message.author.id
             }).then(async (res) => {
                 clearInterval(typing);
-                await message.reply(res.data.choices[0].text);
+                await message.reply(res.data.choices[0].message.content);
             }).catch(async (error) => {
                 clearInterval(typing);
                 console.error(error);
                 await message.reply("```diff\n-何らかの問題が発生しました。\n```");
-            });*/
+            });
 
         } catch (err) {
             console.log(err);
