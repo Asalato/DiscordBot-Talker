@@ -1,4 +1,5 @@
 const {Configuration, OpenAIApi} = require("openai");
+const {ChatCompletionRequestMessage} = require("openai/api");
 
 module.exports = {
     name: 'messageCreate',
@@ -8,23 +9,24 @@ module.exports = {
         if (!message.mentions.has(client.user)) return false;
         await message.channel.sendTyping();
 
+        let dialog = [];
         const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
         const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
-        const text = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format\n\n`;
-        let chatLog = ``;
+        const text = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
+        dialog.push({role: "system", content: text});
+
         const messages = message.channel.messages;
         let lastId = message.id;
         let isHuman = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
             const lastQuestion = lastMessage.content.replace(`<@${client.user.id}> `, "");
-            chatLog = lastMessage.author.username + ": " + lastQuestion + "\n" + chatLog;
+            const isBot = lastMessage.author.username === client.user.username;
+            dialog.splice(1, 0, {role: isBot ? "assistant" : "user", content: lastQuestion, name: lastMessage.author.username});
             if (!lastMessage.reference || chatLog.length > 1000) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
         }
-        chatLog += client.user.username + ": ";
-        chatLog = text + chatLog;
 
         const configuration = new Configuration({
             apiKey: process.env.OPENAI_SECRET_KEY
@@ -32,9 +34,9 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            const completion = await openai.createCompletion({
+            const completion = await openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
-                prompt: chatLog,
+                prompt: dialog,
                 max_tokens: 2048,
                 temperature: 0.2,
                 stream: true,

@@ -5,7 +5,7 @@
     "discord.js": "^14.1.2",
     "dotenv": "^16.0.3",
     "eslint-config-prettier": "^8.5.0",
-    "openai": "^3.1.0",
+    "openai": "^3.2.1",
     "prettier": "^2.7.1"
   },
   "devDependencies": {
