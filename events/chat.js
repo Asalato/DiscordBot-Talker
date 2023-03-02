@@ -1,5 +1,33 @@
 const {Configuration, OpenAIApi} = require("openai");
 
+function replaceMentionsWithUsernames(message) {
+    const mentions = message.mentions;
+    let content = message.content;
+
+    mentions.members.forEach((member) => {
+        const mention = `<@!${member.id}>`;
+        const username = member.displayName;
+        const replacement = `${username}へ:`;
+        content = content.replace(mention, replacement);
+    });
+
+    mentions.roles.forEach((role) => {
+        const mention = `<@&${role.id}>`;
+        const roleName = role.name;
+        const replacement = `${roleName}へ:`;
+        content = content.replace(mention, replacement);
+    });
+
+    mentions.users.forEach((user) => {
+        const mention = `<@${user.id}>`;
+        const username = user.username;
+        const replacement = `${username}へ: `;
+        content = content.replace(mention, replacement);
+    });
+
+    return content;
+}
+
 module.exports = {
     name: 'messageCreate',
     once: false,
@@ -19,7 +47,8 @@ module.exports = {
         let isHuman = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
-            const lastQuestion = lastMessage.content.replace(/<@\S+>/g, "");
+            const lastQuestion = replaceMentionsWithUsernames(lastMessage);
+            console.log(lastQuestion)
             const isBot = lastMessage.author.username === client.user.username;
             dialog.splice(1, 0, {role: isBot ? "assistant" : "user", content: lastQuestion/*, name: lastMessage.author.username*/});
             if (!lastMessage.reference || dialog.length > 6) break;
