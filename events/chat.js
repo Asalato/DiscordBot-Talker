@@ -146,7 +146,7 @@ module.exports = {
             }).catch(async (error) => {
                 clearInterval(typing);
                 console.error(error);
-                await message.reply("```diff\n-何らかの問題が発生しました。\n```");
+                await message.reply(`\`\`\`diff\n-何らかの問題が発生しました。\n${error.toString()}\n\`\`\``);
             });
 
         } catch (err) {
