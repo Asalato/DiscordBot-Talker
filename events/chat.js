@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder, PermissionsBitField  } = require('discord.js');
 
-const rev = "v1.3.7";
+const rev = "v1.3.8";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -95,7 +95,7 @@ async function sendHelpText(client, message) {
             "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
             "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
             "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
-            "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
+            "`!dev`\tデベロッパーチャンネルへ送信します（検証用）。\n" +
             "`!help`\tヘルプメニューを表示します（これ）。\n"
         );
     }
