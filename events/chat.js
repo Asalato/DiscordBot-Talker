@@ -1,9 +1,25 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-function replaceMentionsWithUsernames(message) {
-    const mentions = message.mentions;
-    let content = message.content;
+function extractCommands(message) {
+    const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
+    let msgArr = mentionTrimmed.split(" ");
+    const commands = [];
+    for (let i = 0; i < msgArr.length; ++i) {
+        if (!msgArr[i].startsWith("!")) break;
+        const command = msgArr[i].slice(1).split("=");
+        commands.push({
+            command: command[0],
+            parameter: command.length === 0 ? "" : command[1].replace("\"", "")
+        });
+        msgArr[i] = "";
+    }
+    return {
+        message: msgArr.join(" "),
+        commands: commands
+    };
+}
 
+function replaceMentionsWithUsernames(mentions, content) {
     mentions.members.forEach((member) => {
         const mention = `<@!${member.id}>`;
         const username = member.displayName;
@@ -34,6 +50,24 @@ module.exports = {
     async execute(client, message) {
         if (message.author.bot) return false;
         if (!message.mentions.has(client.user)) return false;
+        const currentCommands = extractCommands(message);
+        if (currentCommands.commands.filter(c => c.command === "dev").length !== 0) {
+            await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
+            return;
+        }
+
+        if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
+            await message.reply(
+                "- `!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
+                "- `!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。" +
+                "- `!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+                "    - `stream`\tメッセージをストリームとして返却します（β）。\n" +
+                "- `!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
+                "- `!help`\tヘルプメニューを表示します（これ）。"
+            );
+            return;
+        }
+
         await message.channel.sendTyping();
 
         let dialog = [];
@@ -47,10 +81,21 @@ module.exports = {
         let isHuman = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
-            const lastQuestion = replaceMentionsWithUsernames(lastMessage);
-            console.log(lastQuestion)
-            const isBot = lastMessage.author.username === client.user.username;
-            dialog.splice(1, 0, {role: isBot ? "assistant" : "user", content: lastQuestion/*, name: lastMessage.author.username*/});
+
+            let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
+            const commands = extractCommands(lastMessage);
+            const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
+            if (commands.commands.filter(c => c.command === "role").length !== 0){
+                const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
+                if (parameter === "system") {
+                    role = "system";
+                    if (dialog.length === 1) dialog = [];
+                }
+                if (parameter === "bot") role = "assistant";
+                if (parameter === "user") role = "user";
+            }
+
+            dialog.splice(dialog.length !== 0 ? 1 : 0, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
             if (!lastMessage.reference || dialog.length > 6) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
@@ -62,93 +107,94 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            /*const completion = await openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
-                messages: dialog,
-                max_tokens: 2048,
-                temperature: 0.2,
-                stream: true,
-                user: message.author.id
-            }, {
-                responseType: 'stream'
-            })
+            const useStream = currentCommands.commands.filter(c => c.command === "mode" && c.stream === "stream").length !== 0;
 
-            let tempResponse = undefined;
-            let tempResponseStr = "";
-            let isEnd = false;
-            let errorStr = undefined;
-            const typing = setInterval(async () => {
-                try {
-                    if (errorStr) {
-                        clearInterval(typing);
-                        if (tempResponse) {
-                            await tempResponse.delete();
-                            tempResponse = undefined;
-                        }
-                        await message.reply("```diff\n-" + errorStr + "。\n```");
-                    } else if (isEnd) {
-                        clearInterval(typing);
-                        if (tempResponse) {
-                            await tempResponse.delete();
-                            tempResponse = undefined;
-                        }
-                        await message.reply(tempResponseStr);
-                    } else {
-                        if (tempResponseStr !== "") {
-                            if (tempResponse) tempResponse.edit(tempResponseStr);
-                            else tempResponse = await message.reply(tempResponseStr);
-                        }
-                        await message.channel.sendTyping();
-                    }
-                } catch(error) {
-                    console.error(error);
-                    clearInterval(typing);
-                    if (tempResponse) {
-                        await tempResponse.delete();
-                        tempResponse = undefined;
-                    }
-                    await message.reply("```diff\n-何らかの問題が発生しました。\n```");
-                }
-            }, 1000);
+            if (useStream) {
+                const completion = await openai.createChatCompletion({
+                    model: "gpt-3.5-turbo",
+                    messages: dialog,
+                    temperature: 0.2,
+                    stream: true,
+                    user: message.author.id
+                }, {
+                    responseType: 'stream'
+                })
 
-            completion.data.on('data', async data => {
-                const lines = data.toString().split('\n').filter(line => line.trim() !== '');
-                for (const line of lines) {
-                    const str = line.replace(/^data: /, '');
-                    if (str === '[DONE]') {
-                        isEnd = true;
-                        return; // Stream finished
-                    }
+                let tempResponse = undefined;
+                let tempResponseStr = "";
+                let isEnd = false;
+                let errorStr = undefined;
+                const typing = setInterval(async () => {
                     try {
-                        const parsed = JSON.parse(str);
-                        tempResponseStr += parsed.choices[0].text;
-                    } catch(error) {
-                        errorStr = 'Could not JSON parse stream message' + str + error;
-                        console.error('Could not JSON parse stream message', str, error);
-                        return;
+                        if (errorStr) {
+                            clearInterval(typing);
+                            if (tempResponse) {
+                                await tempResponse.delete();
+                                tempResponse = undefined;
+                            }
+                            await message.reply("```diff\n-" + errorStr + "。\n```");
+                        } else if (isEnd) {
+                            clearInterval(typing);
+                            if (tempResponse) {
+                                await tempResponse.delete();
+                                tempResponse = undefined;
+                            }
+                            await message.reply(tempResponseStr);
+                        } else {
+                            if (tempResponseStr !== "") {
+                                if (tempResponse) tempResponse.edit(tempResponseStr);
+                                else tempResponse = await message.reply(tempResponseStr);
+                            }
+                            await message.channel.sendTyping();
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        clearInterval(typing);
+                        if (tempResponse) {
+                            await tempResponse.delete();
+                            tempResponse = undefined;
+                        }
+                        await message.reply("```diff\n-何らかの問題が発生しました。\n```");
                     }
-                }
-            })*/
+                }, 1000);
 
-            const typing = setInterval(async () => {
-                await message.channel.sendTyping();
-            }, 1000);
+                completion.data.on('data', async data => {
+                    const lines = data.toString().split('\n').filter(line => line.trim() !== '');
+                    for (const line of lines) {
+                        const str = line.replace(/^data: /, '');
+                        if (str === '[DONE]') {
+                            isEnd = true;
+                            return;
+                        }
+                        try {
+                            const parsed = JSON.parse(str);
+                            tempResponseStr += parsed.choices[0].text;
+                        } catch (error) {
+                            errorStr = 'Could not JSON parse stream message' + str + error;
+                            console.error('Could not JSON parse stream message', str, error);
+                            return;
+                        }
+                    }
+                })
+            } else {
+                const typing = setInterval(async () => {
+                    await message.channel.sendTyping();
+                }, 1000);
 
-            openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
-                messages: dialog,
-                max_tokens: 2048,
-                temperature: 0.2,
-                user: message.author.id
-            }).then(async (res) => {
-                clearInterval(typing);
-                await message.reply(res.data.choices[0].message.content);
-            }).catch(async (error) => {
-                clearInterval(typing);
-                console.error(error);
-                await message.reply(`\`\`\`diff\n-何らかの問題が発生しました。\n${error.toString()}\n\`\`\``);
-            });
-
+                openai.createChatCompletion({
+                    model: "gpt-3.5-turbo",
+                    messages: dialog,
+                    temperature: 0.2,
+                    user: message.author.id
+                }).then(async (res) => {
+                    clearInterval(typing);
+                    await message.reply(res.data.choices[0].message.content);
+                }).catch(async (error) => {
+                    clearInterval(typing);
+                    console.error(error);
+                    await message.reply(`\`\`\`diff\n-何らかの問題が発生しました。\n${error.toString()}\n\`\`\``);
+                });
+            }
         } catch (err) {
             console.log(err);
             await message.reply("```diff\n-何らかの問題が発生しました。\n```");
