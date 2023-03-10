@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.4";
+const rev = "v1.3.5";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -80,7 +80,7 @@ module.exports = {
                         value: "`!role=${ロール名}`\n\n" +
                             "`!init=${メッセージ}`\n\n\n" +
                             "`!mode=${モード}`\n\n" +
-                            "\t`stream`\n\n" +
+                            "\ \ \ \ `stream`\n\n" +
                             "`!dev`\n\n" +
                             "`!help`",
                         inline: true
