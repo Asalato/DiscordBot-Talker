@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder, PermissionsBitField  } = require('discord.js');
 
-const rev = "v1.3.8";
+const rev = "v1.3.9";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -69,7 +69,7 @@ async function sendHelpText(client, message) {
             .addFields(
                 {
                     name: 'コマンド',
-                    value: "`!role=${ロール名}`\n\n" +
+                    value: "`!role=${ロール名}`\n\n\n\n" +
                         "`!init=${メッセージ}`\n\n\n" +
                         "`!mode=${モード}`\n\n" +
                         "\ \ \ \ `stream`\n\n" +
@@ -78,7 +78,7 @@ async function sendHelpText(client, message) {
                     inline: true
                 },{
                     name: "説明",
-                    value: "そのメッセージを特定のロールの発言として送信します。\n" +
+                    value: "そのメッセージを特定のロールの発言として送信します。（\"system\" or \"user\" or \"bot\"）\n" +
                         "最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
                         "呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
                         "メッセージをストリームとして返却します（β）。\n" +
@@ -91,7 +91,7 @@ async function sendHelpText(client, message) {
     } else {
         await message.reply(
             "**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
-            "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
+            "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。（\"system\" or \"user\" or \"bot\"）\n" +
             "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
             "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
             "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
