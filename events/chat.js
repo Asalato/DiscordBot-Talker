@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.6";
+const rev = "v1.3.7";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -53,7 +53,7 @@ function replaceMentionsWithUsernames(mentions, content) {
     return content;
 }
 
-async function sendHelpText(message) {
+async function sendHelpText(client, message) {
     if (message.channel.permissionsFor(message.client.user).has('EMBED_LINKS')) {
         const embed = new EmbedBuilder()
             .setColor(0x9a5fcd)
@@ -111,7 +111,7 @@ module.exports = {
         }
 
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
-            await sendHelpText(message);
+            await sendHelpText(client, message);
             return;
         }
 
