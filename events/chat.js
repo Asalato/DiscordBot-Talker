@@ -1,6 +1,13 @@
 const {Configuration, OpenAIApi} = require("openai");
+const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.2.4";
+const rev = "v1.3.1";
+
+function splitText(text) {
+    const maxLength = 1200;
+    const regex = new RegExp(`.{1,${maxLength}}`, 'g');
+    return text.match(regex);
+}
 
 function extractCommands(message) {
     const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
@@ -59,15 +66,26 @@ module.exports = {
         }
 
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
-            await message.reply(
-                "**_DiscordBot-Talker_**(https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
-                "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
-                "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
-                "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-                "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
-                "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
-                "`!help`\tヘルプメニューを表示します（これ）。\n"
-            );
+            const embed = new EmbedBuilder()
+                .setColor(0x9a5fcd)
+                .setTitle("DiscordBot-Talker")
+                .setURL("https://github.com/Asalato/DiscordBot-Talker")
+                .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328"})
+                .setDescription("メンションされるとお話しします\nリプライもできます")
+                .setThumbnail("https://cdn.discordapp.com/app-icons/1051418811242397747/948015ce67026ee19caf2e79ab66202b.png")
+                .setFooter({ text: `Rev: **${rev}**`, iconURL: undefined})
+                .addFields(
+                    {
+                        name: 'コマンド',
+                        value: "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
+                            "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
+                            "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+                            "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
+                            "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
+                            "`!help`\tヘルプメニューを表示します（これ）。\n",
+                    },
+                )
+            await message.reply({embeds: embed});
             return;
         }
 
@@ -145,8 +163,25 @@ module.exports = {
                             await message.reply(tempResponseStr);
                         } else {
                             if (tempResponseStr !== "") {
-                                if (tempResponse) tempResponse.edit(tempResponseStr);
-                                else tempResponse = await message.reply(tempResponseStr);
+                                if (tempResponse) {
+                                    if (tempResponseStr.length > 1200){
+                                        await tempResponse.delete();
+                                        const split = splitText(tempResponseStr);
+                                        for (let i = 0; i < split.length - 1; ++i) {
+                                            tempResponse = await message.reply(split[i])
+                                        }
+                                        tempResponseStr = split[split.length - 1];
+                                    } else {
+                                        tempResponse.edit(tempResponseStr);
+                                    }
+                                }
+                                else {
+                                    const split = splitText(tempResponseStr);
+                                    for (let i = 0; i < split.length; ++i) {
+                                        tempResponse = await message.reply(split[i])
+                                    }
+                                    tempResponseStr = split[split.length - 1];
+                                }
                             }
                             await message.channel.sendTyping();
                         }
@@ -191,7 +226,10 @@ module.exports = {
                     user: message.author.id
                 }).then(async (res) => {
                     clearInterval(typing);
-                    await message.reply(res.data.choices[0].message.content);
+                    const split = splitText(res.data.choices[0].message.content);
+                    for (let i = 0; i < split.length; ++i) {
+                        await message.reply(split[i])
+                    }
                 }).catch(async (error) => {
                     clearInterval(typing);
                     console.error(error);
