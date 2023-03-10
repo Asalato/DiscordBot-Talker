@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.2.2";
+const rev = "v1.2.3";
 
 function extractCommands(message) {
     const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
@@ -60,13 +60,13 @@ module.exports = {
 
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
             await message.reply(
-                "- `!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
-                "- `!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。" +
-                "- `!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-                "    - `stream`\tメッセージをストリームとして返却します（β）。\n" +
-                "- `!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
-                "- `!help`\tヘルプメニューを表示します（これ）。\n" +
-                "rev: " + rev
+                "[DiscordBot-Talker](https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
+                "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
+                "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
+                "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+                "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
+                "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
+                "`!help`\tヘルプメニューを表示します（これ）。\n"
             );
             return;
         }
@@ -95,8 +95,8 @@ module.exports = {
                 if (parameter === "user") role = "user";
             }
 
-            if (currentCommands.commands.filter(c => c.command === "init").length !== 0)
-                dialog[0].content = currentCommands.commands.filter(c => c.command === "init")[0].parameter;
+            if (commands.commands.filter(c => c.command === "init").length !== 0)
+                dialog[0].content = commands.commands.filter(c => c.command === "init")[0].parameter;
 
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
             if (!lastMessage.reference || dialog.length > 6) break;
