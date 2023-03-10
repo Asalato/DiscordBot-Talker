@@ -1,5 +1,5 @@
 const {Configuration, OpenAIApi} = require("openai");
-const {EmbedBuilder} = require('discord.js');
+const {EmbedBuilder, Permissions } = require('discord.js');
 
 const rev = "v1.3.7";
 
@@ -57,7 +57,7 @@ function replaceMentionsWithUsernames(mentions, content) {
 }
 
 async function sendHelpText(client, message) {
-    if (message.channel.permissionsFor(message.client.user).has('EMBED_LINKS')) {
+    if (message.channel.permissionsFor(message.client.user).has(Permissions.FLAGS.EMBED_LINKS)) {
         const embed = new EmbedBuilder()
             .setColor(0x9a5fcd)
             .setTitle(`DiscordBot-Talker (${client.user.username})`)
