@@ -73,8 +73,10 @@ module.exports = {
         let dialog = [];
         const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
         const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
-        const text = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
-        dialog.push({role: "system", content: text});
+        let initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
+        if (currentCommands.commands.filter(c => c.command === "init").length !== 0)
+            initText = currentCommands.commands.filter(c => c.command === "init")[0].parameter;
+        dialog.push({role: "system", content: initText});
 
         const messages = message.channel.messages;
         let lastId = message.id;
@@ -87,15 +89,12 @@ module.exports = {
             const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
             if (commands.commands.filter(c => c.command === "role").length !== 0){
                 const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
-                if (parameter === "system") {
-                    role = "system";
-                    if (dialog.length === 1) dialog = [];
-                }
+                if (parameter === "system") role = "system";
                 if (parameter === "bot") role = "assistant";
                 if (parameter === "user") role = "user";
             }
 
-            dialog.splice(dialog.length !== 0 ? 1 : 0, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
+            dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
             if (!lastMessage.reference || dialog.length > 6) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
