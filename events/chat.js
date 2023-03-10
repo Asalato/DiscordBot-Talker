@@ -1,5 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 
+const rev = "v1.2.1";
+
 function extractCommands(message) {
     const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
     let msgArr = mentionTrimmed.split(" ");
@@ -63,7 +65,8 @@ module.exports = {
                 "- `!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
                 "    - `stream`\tメッセージをストリームとして返却します（β）。\n" +
                 "- `!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
-                "- `!help`\tヘルプメニューを表示します（これ）。"
+                "- `!help`\tヘルプメニューを表示します（これ）。\n" +
+                "rev: " + rev
             );
             return;
         }
