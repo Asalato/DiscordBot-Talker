@@ -1,11 +1,11 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.5";
+const rev = "v1.3.6";
 
 function splitText(text) {
     const maxLength = 1200;
-    const regex = new RegExp(`.{1,${maxLength}}`, 'g');
+    const regex = new RegExp(`.{1,${maxLength}}(?![^\\n])`, 'g');
     return text.match(regex);
 }
 
@@ -53,6 +53,51 @@ function replaceMentionsWithUsernames(mentions, content) {
     return content;
 }
 
+async function sendHelpText(message) {
+    if (message.channel.permissionsFor(message.client.user).has('EMBED_LINKS')) {
+        const embed = new EmbedBuilder()
+            .setColor(0x9a5fcd)
+            .setTitle(`DiscordBot-Talker (${client.user.username})`)
+            .setURL("https://github.com/Asalato/DiscordBot-Talker")
+            .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328", url: "https://github.com/Asalato"})
+            .setDescription("メンションされるとお話しします\nリプライもできます")
+            .setThumbnail("https://cdn.discordapp.com/app-icons/1051418811242397747/948015ce67026ee19caf2e79ab66202b.png")
+            .setFooter({ text: `Rev: ${rev}`, iconURL: undefined})
+            .addFields(
+                {
+                    name: 'コマンド',
+                    value: "`!role=${ロール名}`\n\n" +
+                        "`!init=${メッセージ}`\n\n\n" +
+                        "`!mode=${モード}`\n\n" +
+                        "\ \ \ \ `stream`\n\n" +
+                        "`!dev`\n\n" +
+                        "`!help`",
+                    inline: true
+                },{
+                    name: "説明",
+                    value: "そのメッセージを特定のロールの発言として送信します。\n" +
+                        "最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
+                        "呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+                        "メッセージをストリームとして返却します（β）。\n" +
+                        "デベロッパーチャンネルへ送信します（検証用）。\n" +
+                        "ヘルプメニューを表示します（これ）。",
+                    inline: true
+                }
+            )
+        await message.reply({embeds: [embed]});
+    } else {
+        await message.reply(
+            "**_DiscordBot-Talker_**(https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
+            "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
+            "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
+            "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+            "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
+            "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
+            "`!help`\tヘルプメニューを表示します（これ）。\n"
+        );
+    }
+}
+
 module.exports = {
     name: 'messageCreate',
     once: false,
@@ -66,36 +111,7 @@ module.exports = {
         }
 
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
-            const embed = new EmbedBuilder()
-                .setColor(0x9a5fcd)
-                .setTitle(`DiscordBot-Talker (${client.user.username})`)
-                .setURL("https://github.com/Asalato/DiscordBot-Talker")
-                .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328", url: "https://github.com/Asalato"})
-                .setDescription("メンションされるとお話しします\nリプライもできます")
-                .setThumbnail("https://cdn.discordapp.com/app-icons/1051418811242397747/948015ce67026ee19caf2e79ab66202b.png")
-                .setFooter({ text: `Rev: ${rev}`, iconURL: undefined})
-                .addFields(
-                    {
-                        name: 'コマンド',
-                        value: "`!role=${ロール名}`\n\n" +
-                            "`!init=${メッセージ}`\n\n\n" +
-                            "`!mode=${モード}`\n\n" +
-                            "\ \ \ \ `stream`\n\n" +
-                            "`!dev`\n\n" +
-                            "`!help`",
-                        inline: true
-                    },{
-                        name: "説明",
-                        value: "そのメッセージを特定のロールの発言として送信します。\n" +
-                            "最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
-                            "呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-                            "メッセージをストリームとして返却します（β）。\n" +
-                            "デベロッパーチャンネルへ送信します（検証用）。\n" +
-                            "ヘルプメニューを表示します（これ）。",
-                        inline: true
-                    }
-                )
-            await message.reply({embeds: [embed]});
+            await sendHelpText(message);
             return;
         }
 
@@ -177,8 +193,11 @@ module.exports = {
                                     if (tempResponseStr.length > 1200){
                                         await tempResponse.delete();
                                         const split = splitText(tempResponseStr);
+                                        let isInnerQuote = false;
                                         for (let i = 0; i < split.length - 1; ++i) {
-                                            tempResponse = await message.reply(split[i])
+                                            const res = (isInnerQuote ? "```\n" : "") + split[i];
+                                            tempResponse = await message.reply(res);
+                                            if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
                                         }
                                         tempResponseStr = split[split.length - 1];
                                     } else {
@@ -187,8 +206,11 @@ module.exports = {
                                 }
                                 else {
                                     const split = splitText(tempResponseStr);
-                                    for (let i = 0; i < split.length; ++i) {
-                                        tempResponse = await message.reply(split[i])
+                                    let isInnerQuote = false;
+                                    for (let i = 0; i < split.length - 1; ++i) {
+                                        const res = (isInnerQuote ? "```\n" : "") + split[i];
+                                        tempResponse = await message.reply(res);
+                                        if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
                                     }
                                     tempResponseStr = split[split.length - 1];
                                 }
