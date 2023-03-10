@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.2.1";
+const rev = "v1.2.2";
 
 function extractCommands(message) {
     const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
@@ -76,9 +76,7 @@ module.exports = {
         let dialog = [];
         const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
         const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
-        let initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
-        if (currentCommands.commands.filter(c => c.command === "init").length !== 0)
-            initText = currentCommands.commands.filter(c => c.command === "init")[0].parameter;
+        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
         const messages = message.channel.messages;
@@ -96,6 +94,9 @@ module.exports = {
                 if (parameter === "bot") role = "assistant";
                 if (parameter === "user") role = "user";
             }
+
+            if (currentCommands.commands.filter(c => c.command === "init").length !== 0)
+                dialog[0].content = currentCommands.commands.filter(c => c.command === "init")[0].parameter;
 
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
             if (!lastMessage.reference || dialog.length > 6) break;
