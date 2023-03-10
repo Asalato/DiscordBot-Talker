@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.1";
+const rev = "v1.3.2";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -85,7 +85,7 @@ module.exports = {
                             "`!help`\tヘルプメニューを表示します（これ）。\n",
                     },
                 )
-            await message.reply({embeds: embed});
+            await message.reply({embeds: [embed]});
             return;
         }
 
