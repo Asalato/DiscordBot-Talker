@@ -11,7 +11,7 @@ function extractCommands(message) {
         const command = msgArr[i].slice(1).split("=");
         commands.push({
             command: command[0],
-            parameter: command.length === 0 ? "" : command[1].replace("\"", "")
+            parameter: command[1]?.replace("\"", "")
         });
         msgArr[i] = "";
     }
