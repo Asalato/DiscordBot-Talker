@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.3";
+const rev = "v1.3.4";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -68,7 +68,7 @@ module.exports = {
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
             const embed = new EmbedBuilder()
                 .setColor(0x9a5fcd)
-                .setTitle("DiscordBot-Talker")
+                .setTitle(`DiscordBot-Talker (${client.user.username})`)
                 .setURL("https://github.com/Asalato/DiscordBot-Talker")
                 .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328", url: "https://github.com/Asalato"})
                 .setDescription("メンションされるとお話しします\nリプライもできます")
