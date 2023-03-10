@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 const {EmbedBuilder} = require('discord.js');
 
-const rev = "v1.3.2";
+const rev = "v1.3.3";
 
 function splitText(text) {
     const maxLength = 1200;
@@ -70,20 +70,30 @@ module.exports = {
                 .setColor(0x9a5fcd)
                 .setTitle("DiscordBot-Talker")
                 .setURL("https://github.com/Asalato/DiscordBot-Talker")
-                .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328"})
+                .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328", url: "https://github.com/Asalato"})
                 .setDescription("メンションされるとお話しします\nリプライもできます")
                 .setThumbnail("https://cdn.discordapp.com/app-icons/1051418811242397747/948015ce67026ee19caf2e79ab66202b.png")
-                .setFooter({ text: `Rev: **${rev}**`, iconURL: undefined})
+                .setFooter({ text: `Rev: ${rev}`, iconURL: undefined})
                 .addFields(
                     {
                         name: 'コマンド',
-                        value: "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
-                            "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
-                            "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-                            "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
-                            "`!dev`\tデベロッパーモードで起動します。バグります多分、\n" +
-                            "`!help`\tヘルプメニューを表示します（これ）。\n",
-                    },
+                        value: "`!role=${ロール名}`\n" +
+                            "`!init=${メッセージ}`\n" +
+                            "`!mode=${モード}`\n" +
+                            "  `stream`\n" +
+                            "`!dev`\n" +
+                            "`!help`",
+                        inline: true
+                    },{
+                        name: "説明",
+                        value: "そのメッセージを特定のロールの発言として送信します。\n" +
+                            "最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
+                            "呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
+                            "メッセージをストリームとして返却します（β）。\n" +
+                            "デベロッパーモードで起動します。バグります多分。\n" +
+                            "ヘルプメニューを表示します（これ）。",
+                        inline: true
+                    }
                 )
             await message.reply({embeds: [embed]});
             return;
