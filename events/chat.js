@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.2.3";
+const rev = "v1.2.4";
 
 function extractCommands(message) {
     const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
@@ -60,7 +60,7 @@ module.exports = {
 
         if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
             await message.reply(
-                "[DiscordBot-Talker](https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
+                "**_DiscordBot-Talker_**(https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
                 "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。\n" +
                 "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
                 "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
