@@ -5,8 +5,11 @@ const rev = "v1.3.7";
 
 function splitText(text) {
     const maxLength = 1200;
-    const regex = new RegExp(`.{1,${maxLength}}(?![^\\n])`, 'g');
-    return text.match(regex);
+    const result = [];
+    for (let i = 0; i < Math.ceil(text.length / maxLength); i++) {
+        result.push(text.slice(i * maxLength, (i + 1) * maxLength));
+    }
+    return result;
 }
 
 function extractCommands(message) {
