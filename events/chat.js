@@ -1,7 +1,55 @@
 const {Configuration, OpenAIApi} = require("openai");
-const {EmbedBuilder, PermissionsBitField  } = require('discord.js');
 
-const rev = "v1.3.9";
+const rev = "v1.3.11";
+
+const commandList = [
+    {
+        command: "!role",
+        description: "そのメッセージを特定のロールの発言として送信します。",
+        options: [
+            {
+                name: "system",
+                description: "天の声（システムメッセージ）として発言します。"
+            },
+            {
+                name: "user",
+                description: "ユーザーとして発言します（デフォルト）。"
+            },
+            {
+                name: "bot",
+                description: "ボット（ChatGPT）側の過去の発言としてマークします。"
+            }
+        ],
+        hasOption: true
+    },
+    {
+        command: "!init",
+        description: "最初のシステムメッセージをこのテキストに置き換えます。",
+        optionDescription: "システムメッセージ、ダブルクオーテーションで囲んでもよい任意のテキスト。",
+        hasOption: true
+    },
+    {
+        command: "!mode",
+        description: "呼び出しモードを指定します。",
+        options: [
+            {
+                name: "stream",
+                description: "メッセージをストリームとして返却します（β）。"
+            }
+        ],
+        hasOption: true
+    },
+    {
+        command: "!dev",
+        description: "デベロッパーチャンネルへ送信します（検証用）。",
+        hasOption: false
+    },
+    {
+        command: "!help",
+        description: "ヘルプメニューを表示します（これ）。",
+        hasOption: false
+    }
+]
 
 function splitText(text) {
     const maxLength = 1200;
@@ -13,20 +61,27 @@ function splitText(text) {
 }
 
 function extractCommands(message) {
-    const mentionTrimmed = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
-    let msgArr = mentionTrimmed.split(" ");
+    let formattedContent = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
+
     const commands = [];
-    for (let i = 0; i < msgArr.length; ++i) {
-        if (!msgArr[i].startsWith("!")) break;
-        const command = msgArr[i].slice(1).split("=");
-        commands.push({
-            command: command[0],
-            parameter: command[1]?.replace("\"", "")
+    while(true) {
+        const current = formattedContent;
+        commandList.forEach(c => {
+            const regex = new RegExp(`^\\s*${c.command}(=(\\S*))?`);
+            const match = formattedContent.match(regex);
+            if (!match) return;
+
+            commands.push({
+                command: c.command,
+                parameter: match[2]
+            });
+            formattedContent = formattedContent.replace(match[0], "");
         });
-        msgArr[i] = "";
+        if (formattedContent === current) break;
     }
+
     return {
-        message: msgArr.join(" "),
+        message: formattedContent,
         commands: commands
     };
 }
@@ -57,48 +112,18 @@ function replaceMentionsWithUsernames(mentions, content) {
 }
 
 async function sendHelpText(client, message) {
-    if (message.channel.permissionsFor(message.client.user).has(PermissionsBitField.Flags.EmbedLinks)) {
-        const embed = new EmbedBuilder()
-            .setColor(0x9a5fcd)
-            .setTitle(`DiscordBot-Talker (${client.user.username})`)
-            .setURL("https://github.com/Asalato/DiscordBot-Talker")
-            .setAuthor({name: "Asalato", iconURL: "https://avatars.githubusercontent.com/u/35593328", url: "https://github.com/Asalato"})
-            .setDescription("メンションされるとお話しします\nリプライもできます")
-            .setThumbnail("https://cdn.discordapp.com/app-icons/1051418811242397747/948015ce67026ee19caf2e79ab66202b.png")
-            .setFooter({ text: `Rev: ${rev}`, iconURL: undefined})
-            .addFields(
-                {
-                    name: 'コマンド',
-                    value: "`!role=${ロール名}`\n\n\n\n" +
-                        "`!init=${メッセージ}`\n\n\n" +
-                        "`!mode=${モード}`\n\n" +
-                        "\ \ \ \ `stream`\n\n" +
-                        "`!dev`\n\n" +
-                        "`!help`",
-                    inline: true
-                },{
-                    name: "説明",
-                    value: "そのメッセージを特定のロールの発言として送信します。（\"system\" or \"user\" or \"bot\"）\n" +
-                        "最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
-                        "呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-                        "メッセージをストリームとして返却します（β）。\n" +
-                        "デベロッパーチャンネルへ送信します（検証用）。\n" +
-                        "ヘルプメニューを表示します（これ）。",
-                    inline: true
-                }
-            )
-        await message.reply({embeds: [embed]});
-    } else {
-        await message.reply(
-            "**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" +
-            "`!role=${ロール名}`\tそのメッセージを特定のロールの発言として送信します。（\"system\" or \"user\" or \"bot\"）\n" +
-            "`!init=${メッセージ}`\t最初のシステムメッセージをこのテキストに置き換えます。ダブルクオーテーションで囲むことができます。\n" +
-            "`!mode=${モード}`\t呼び出しモードを指定します。利用可能なモードは次の通りです。\n" +
-            "  `stream`\tメッセージをストリームとして返却します（β）。\n" +
-            "`!dev`\tデベロッパーチャンネルへ送信します（検証用）。\n" +
-            "`!help`\tヘルプメニューを表示します（これ）。\n"
-        );
-    }
+    const commandDesc = commandList.map(c => {
+        let msg = `\`${c.command}\`\t${c.description}`;
+        if (c.hasOption)
+            msg += "\n\tオプション\n";
+        if (c.hasOption && c.optionDescription)
+            msg += "\t\t" + c.optionDescription;
+        if (c.options && c.options.length > 0)
+            msg += c.options.map(o => "\t\t`" + o.name + "`" + (o.description ? ("\t" + o.description) : "")).join("\n");
+        return msg;
+    }).join("\n");
+
+    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" + commandDesc);
 }
 
 module.exports = {
@@ -108,12 +133,13 @@ module.exports = {
         if (message.author.bot) return false;
         if (!message.mentions.has(client.user)) return false;
         const currentCommands = extractCommands(message);
-        if (currentCommands.commands.filter(c => c.command === "dev").length !== 0) {
+
+        if (currentCommands.commands.filter(c => c.command !== "dev").length !== 0) {
             await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
 
-        if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message === "") {
+        if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message.replace(/\s/, "") === "") {
             await sendHelpText(client, message);
             return;
         }
