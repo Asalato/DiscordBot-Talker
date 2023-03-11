@@ -151,7 +151,7 @@ module.exports = {
             return;
         }
 
-        if (containsCommand(currentCommands,"!dev") ? isDev : !isDev) {
+        if (containsCommand(currentCommands,"!dev") ? !isDev : isDev) {
             if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
@@ -177,7 +177,7 @@ module.exports = {
 
             const commands = extractCommands(lastMessage);
             if (containsCommand(commands, "!help") || containsCommand(commands, "!version")) continue;
-            if (containsCommand(commands, "!dev") ? isDev : !isDev) continue;
+            if (containsCommand(commands, "!dev") ? !isDev : isDev) continue;
 
             const initMsg = containsCommand(commands,"!init");
             if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
