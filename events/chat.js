@@ -1,6 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.11";
+const rev = "v1.3.12";
+const isDev = false;
 
 const commandList = [
     {
@@ -112,16 +113,17 @@ function replaceMentionsWithUsernames(mentions, content) {
 }
 
 async function sendHelpText(client, message) {
-    const commandDesc = commandList.map(c => {
-        let msg = `\`${c.command}\`\t${c.description}`;
+    let commandDesc = commandList.map(c => {
+        let msg = `>\ \`${c.command}\`\t${c.description}`;
         if (c.hasOption)
-            msg += "\n\tオプション\n";
+            msg += ">\ \n>\ \tオプション\n";
         if (c.hasOption && c.optionDescription)
-            msg += "\t\t" + c.optionDescription;
+            msg += ">\ \t\t" + c.optionDescription;
         if (c.options && c.options.length > 0)
-            msg += c.options.map(o => "\t\t`" + o.name + "`" + (o.description ? ("\t" + o.description) : "")).join("\n");
+            msg += c.options.map(o => ">\ \t\t`" + o.name + "`" + (o.description ? ("\t" + o.description) : "")).join("\n");
         return msg;
     }).join("\n");
+    commandDesc = "\n🖊\ 利用可能なオプション一覧\n\tテキストの先頭につけることで動作が変更されます。\n" + commandDesc
 
     await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" + commandDesc);
 }
@@ -134,7 +136,8 @@ module.exports = {
         if (!message.mentions.has(client.user)) return false;
         const currentCommands = extractCommands(message);
 
-        if (currentCommands.commands.filter(c => c.command !== "dev").length !== 0) {
+        let setIsDev = currentCommands.commands.filter(c => c.command === "dev").length !== 0;
+        if (setIsDev === isDev) {
             await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
