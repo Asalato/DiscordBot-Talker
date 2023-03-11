@@ -137,7 +137,7 @@ module.exports = {
         const currentCommands = extractCommands(message);
 
         let setIsDev = currentCommands.commands.filter(c => c.command === "dev").length !== 0;
-        if (setIsDev === isDev) {
+        if (setIsDev ? !isDev : isDev) {
             await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
