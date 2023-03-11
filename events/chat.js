@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.14";
+const rev = "v1.3.15";
 const isDev = false;
 
 const commandList = [
@@ -140,20 +140,20 @@ module.exports = {
         if (message.author.bot) return false;
         if (!message.mentions.has(client.user)) return false;
         const currentCommands = extractCommands(message);
-
-        let setIsDev = currentCommands.commands.filter(c => c.command === "dev").length !== 0;
-        if (setIsDev ? !isDev : isDev) {
-            if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
-            return;
-        }
         if (isDev) console.log(currentCommands);
 
-        if (currentCommands.commands.filter(c => c.command === "version").length !== 0) {
+        if (currentCommands.commands.filter(c => c.command === "!version").length !== 0) {
             await message.reply(rev);
             return;
         }
 
-        if (currentCommands.commands.filter(c => c.command === "help").length !== 0 || currentCommands.message.replace(/\s/, "") === "") {
+        let setIsDev = currentCommands.commands.filter(c => c.command === "!dev").length !== 0;
+        if (setIsDev ? !isDev : isDev) {
+            if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
+            return;
+        }
+
+        if (currentCommands.commands.filter(c => c.command === "!help").length !== 0 || currentCommands.message.replace(/\s/, "") === "") {
             await sendHelpText(client, message);
             return;
         }
@@ -175,15 +175,16 @@ module.exports = {
             let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
             const commands = extractCommands(lastMessage);
             const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
-            if (commands.commands.filter(c => c.command === "role").length !== 0){
+            if (commands.commands.filter(c => c.command === "!role").length !== 0){
                 const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
                 if (parameter === "system") role = "system";
                 if (parameter === "bot") role = "assistant";
                 if (parameter === "user") role = "user";
             }
 
-            if (commands.commands.filter(c => c.command === "init").length !== 0)
-                dialog[0].content = commands.commands.filter(c => c.command === "init")[0].parameter.replace("\"", "");
+            const initMsg = commands.commands.filter(c => c.command === "!init");
+            if (initMsg.length !== 0)
+                dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
 
@@ -202,7 +203,7 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            const useStream = currentCommands.commands.filter(c => c.command === "mode" && c.stream === "stream").length !== 0;
+            const useStream = currentCommands.commands.filter(c => c.command === "!mode" && c.parameter === "stream").length !== 0;
 
             if (useStream) {
                 const completion = await openai.createChatCompletion({
