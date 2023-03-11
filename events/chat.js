@@ -1,7 +1,7 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.13";
-const isDev = false;
+const rev = "v1.3.14";
+const isDev = true;
 
 const commandList = [
     {
@@ -48,6 +48,11 @@ const commandList = [
     {
         command: "!help",
         description: "ヘルプメニューを表示します（これ）。",
+        hasOption: false
+    },
+    {
+        command: "!version",
+        description: "バージョンのみを返します。",
         hasOption: false
     }
 ]
@@ -125,7 +130,7 @@ async function sendHelpText(client, message) {
     }).join("\n");
     commandDesc = "\n🖊\ 利用可能なオプション一覧\n\tテキストの先頭につけることで動作が変更されます。\n" + commandDesc
 
-    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**\n" + commandDesc);
+    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? "(dev channel)" : "") + "\n" + commandDesc);
 }
 
 module.exports = {
@@ -138,7 +143,13 @@ module.exports = {
 
         let setIsDev = currentCommands.commands.filter(c => c.command === "dev").length !== 0;
         if (setIsDev ? !isDev : isDev) {
-            await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
+            if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
+            return;
+        }
+        if (isDev) console.log(currentCommands);
+
+        if (currentCommands.commands.filter(c => c.command === "version").length !== 0) {
+            await message.reply(rev);
             return;
         }
 
@@ -172,9 +183,10 @@ module.exports = {
             }
 
             if (commands.commands.filter(c => c.command === "init").length !== 0)
-                dialog[0].content = commands.commands.filter(c => c.command === "init")[0].parameter;
+                dialog[0].content = commands.commands.filter(c => c.command === "init")[0].parameter.replace("\"", "");
 
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
+
             if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
                 dialog.slice(0, dialog.length - 1);
                 break;
