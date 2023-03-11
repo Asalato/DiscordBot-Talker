@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.16";
+const rev = "v1.3.17";
 const isDev = false;
 
 const commandList = [
@@ -275,7 +275,7 @@ module.exports = {
                         }
                         await message.reply("```diff\n-何らかの問題が発生しました。\n```");
                     }
-                }, 1000);
+                }, 500);
 
                 completion.data.on('data', async data => {
                     const lines = data.toString().split('\n').filter(line => line.trim() !== '');
@@ -287,7 +287,8 @@ module.exports = {
                         }
                         try {
                             const parsed = JSON.parse(str);
-                            tempResponseStr += parsed.choices[0].text;
+                            const fragment = parsed.choices[0].delta?.content;
+                            if(fragment) tempResponseStr += fragment;
                         } catch (error) {
                             errorStr = 'Could not JSON parse stream message' + str + error;
                             console.error('Could not JSON parse stream message', str, error);
