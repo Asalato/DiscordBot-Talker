@@ -251,9 +251,10 @@ module.exports = {
                                         const split = splitText(tempResponseStr);
                                         let isInnerQuote = false;
                                         for (let i = 0; i < split.length - 1; ++i) {
-                                            const res = (isInnerQuote ? "```\n" : "") + split[i];
-                                            tempResponse = await message.reply(res);
+                                            let res = (isInnerQuote ? "```\n" : "") + split[i];
                                             if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
+                                            if (isInnerQuote) res += "\n```";
+                                            tempResponse = await message.reply(res);
                                         }
                                         tempResponseStr = split[split.length - 1];
                                     } else {
@@ -264,9 +265,10 @@ module.exports = {
                                     const split = splitText(tempResponseStr);
                                     let isInnerQuote = false;
                                     for (let i = 0; i < split.length - 1; ++i) {
-                                        const res = (isInnerQuote ? "```\n" : "") + split[i];
-                                        tempResponse = await message.reply(res);
+                                        let res = (isInnerQuote ? "```\n" : "") + split[i];
                                         if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
+                                        if (isInnerQuote) res += "\n```";
+                                        tempResponse = await message.reply(res);
                                     }
                                     tempResponseStr = split[split.length - 1];
                                 }
