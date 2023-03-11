@@ -57,6 +57,10 @@ const commandList = [
     }
 ]
 
+function containsCommand(commands, command, param = undefined) {
+    return commands.commands.filter(c => c.command === command).filter(c => param === undefined || c.parameter === param).length !== 0
+}
+
 function splitText(text) {
     const maxLength = 1200;
     const result = [];
@@ -142,18 +146,17 @@ module.exports = {
         const currentCommands = extractCommands(message);
         if (isDev) console.log(currentCommands);
 
-        if (currentCommands.commands.filter(c => c.command === "!version").length !== 0) {
+        if (containsCommand(currentCommands,"!version")) {
             await message.reply(rev);
             return;
         }
 
-        let setIsDev = currentCommands.commands.filter(c => c.command === "!dev").length !== 0;
-        if (setIsDev ? !isDev : isDev) {
+        if (containsCommand(currentCommands,"!dev") ? isDev : !isDev) {
             if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
 
-        if (currentCommands.commands.filter(c => c.command === "!help").length !== 0 || currentCommands.message.replace(/\s/, "") === "") {
+        if (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "") {
             await sendHelpText(client, message);
             return;
         }
@@ -168,24 +171,26 @@ module.exports = {
 
         const messages = message.channel.messages;
         let lastId = message.id;
-        let isHuman = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
+            lastId = lastMessage.reference.messageId;
+
+            const commands = extractCommands(lastMessage);
+            if (containsCommand(commands, "!help") || containsCommand(commands, "!version")) continue;
+            if (containsCommand(commands, "!dev") ? isDev : !isDev) continue;
+
+            const initMsg = containsCommand(commands,"!init");
+            if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
             let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
-            const commands = extractCommands(lastMessage);
-            const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
-            if (commands.commands.filter(c => c.command === "!role").length !== 0){
+            if (containsCommand(commands,"!version")){
                 const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
                 if (parameter === "system") role = "system";
                 if (parameter === "bot") role = "assistant";
                 if (parameter === "user") role = "user";
             }
 
-            const initMsg = commands.commands.filter(c => c.command === "!init");
-            if (initMsg.length !== 0)
-                dialog[0].content = initMsg[0].parameter.replace("\"", "");
-
+            const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
 
             if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
@@ -193,8 +198,6 @@ module.exports = {
                 break;
             }
             if (!lastMessage.reference) break;
-            isHuman = !isHuman;
-            lastId = lastMessage.reference.messageId;
         }
 
         const configuration = new Configuration({
@@ -203,7 +206,7 @@ module.exports = {
         const openai = new OpenAIApi(configuration);
 
         try {
-            const useStream = currentCommands.commands.filter(c => c.command === "!mode" && c.parameter === "stream").length !== 0;
+            const useStream = containsCommand(currentCommands,"!mode", "stream");
 
             if (useStream) {
                 const completion = await openai.createChatCompletion({
