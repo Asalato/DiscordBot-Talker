@@ -116,7 +116,7 @@ async function sendHelpText(client, message) {
     let commandDesc = commandList.map(c => {
         let msg = `>\ \`${c.command}\`\t${c.description}`;
         if (c.hasOption)
-            msg += ">\ \n>\ \tオプション\n";
+            msg += "\n>\ \tオプション\n";
         if (c.hasOption && c.optionDescription)
             msg += ">\ \t\t" + c.optionDescription;
         if (c.options && c.options.length > 0)
