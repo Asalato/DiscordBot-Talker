@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.17";
+const rev = "v1.3.18";
 const isDev = false;
 
 const commandList = [
@@ -173,31 +173,35 @@ module.exports = {
         let lastId = message.id;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
-            lastId = lastMessage.reference.messageId;
 
             const commands = extractCommands(lastMessage);
-            if (containsCommand(commands, "!help") || containsCommand(commands, "!version")) continue;
-            if (containsCommand(commands, "!dev") ? !isDev : isDev) continue;
+            if (containsCommand(commands, "!help") || containsCommand(commands, "!version")){
 
-            const initMsg = containsCommand(commands,"!init");
-            if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
-
-            let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
-            if (containsCommand(commands,"!version")){
-                const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
-                if (parameter === "system") role = "system";
-                if (parameter === "bot") role = "assistant";
-                if (parameter === "user") role = "user";
             }
+            if (containsCommand(commands, "!dev") ? !isDev : isDev){
 
-            const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
-            dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
+            } else {
+                const initMsg = containsCommand(commands, "!init");
+                if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
-            if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
-                dialog.slice(0, dialog.length - 1);
-                break;
+                let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
+                if (containsCommand(commands, "!version")) {
+                    const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
+                    if (parameter === "system") role = "system";
+                    if (parameter === "bot") role = "assistant";
+                    if (parameter === "user") role = "user";
+                }
+
+                const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
+                dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
+
+                if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
+                    dialog.slice(0, dialog.length - 1);
+                    break;
+                }
             }
             if (!lastMessage.reference) break;
+            lastId = lastMessage.reference.messageId;
         }
 
         const configuration = new Configuration({
