@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.12";
+const rev = "v1.3.13";
 const isDev = false;
 
 const commandList = [
@@ -175,7 +175,11 @@ module.exports = {
                 dialog[0].content = commands.commands.filter(c => c.command === "init")[0].parameter;
 
             dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
-            if (!lastMessage.reference || dialog.length > 6) break;
+            if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
+                dialog.slice(0, dialog.length - 1);
+                break;
+            }
+            if (!lastMessage.reference) break;
             isHuman = !isHuman;
             lastId = lastMessage.reference.messageId;
         }
