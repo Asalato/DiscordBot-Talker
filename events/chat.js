@@ -181,12 +181,12 @@ module.exports = {
             if (containsCommand(commands, "!dev") ? !isDev : isDev){
 
             } else {
-                const initMsg = containsCommand(commands, "!init");
+                const initMsg = commands.commands.filter(c => c.command === "!init");
                 if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
                 let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
                 if (containsCommand(commands, "!version")) {
-                    const parameter = commands.commands.filter(c => c.command === "role")[0].parameter;
+                    const parameter = commands.commands.filter(c => c.command === "!role")[0].parameter;
                     if (parameter === "system") role = "system";
                     if (parameter === "bot") role = "assistant";
                     if (parameter === "user") role = "user";
