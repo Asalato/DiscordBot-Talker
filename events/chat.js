@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.4.4";
+const rev = "v1.4.5";
 const isDev = false;
 
 const commandList = [
@@ -82,7 +82,7 @@ function extractCommands(message) {
     while(true) {
         const current = formattedContent;
         commandList.forEach(c => {
-            const regex = new RegExp(`^\\s*(${c.command})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|\\s)`);
+            const regex = new RegExp(`^\\s*(${c.command})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|(\\s|$))`);
             const match = formattedContent.match(regex);
             if (!match) return;
 
@@ -152,22 +152,22 @@ module.exports = {
         const currentCommands = extractCommands(message);
         if (isDev) console.log(currentCommands);
 
-        if (containsCommand(currentCommands,"!version")) {
-            await message.reply(rev);
-            return;
-        }
-
         if (containsCommand(currentCommands,"!dev") ? !isDev : isDev) {
             if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             return;
         }
 
-        if (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "") {
-            await sendHelpText(client, message);
+        if (containsCommand(currentCommands,"!noreply")) {
             return;
         }
 
-        if (containsCommand(currentCommands,"!noreply")) {
+        if (containsCommand(currentCommands,"!version")) {
+            await message.reply(rev);
+            return;
+        }
+
+        if (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "") {
+            await sendHelpText(client, message);
             return;
         }
 
