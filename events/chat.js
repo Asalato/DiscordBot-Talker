@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.5.0";
+const rev = "v1.5.1";
 const isDev = false;
 
 const commandList = [
@@ -149,6 +149,8 @@ module.exports = {
     async execute(client, message) {
         if (message.author.bot) return false;
 
+        const messages = message.channel.messages;
+        let lastId = message.id;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
             if (lastMessage.mentions.has(client.user)) break;
@@ -186,8 +188,7 @@ module.exports = {
         const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
-        const messages = message.channel.messages;
-        let lastId = message.id;
+        lastId = message.id;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
 
