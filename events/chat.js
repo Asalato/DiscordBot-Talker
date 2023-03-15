@@ -30,6 +30,11 @@ const commandList = [
         hasOption: true
     },
     {
+        command: "!noreply",
+        description: "このコマンドが指定されたメッセージへの直接のリプライは行われません。（メッセージへのリプライでは読まれます。initやroleを指定する際に利用ください。）",
+        hasOption: false
+    },
+    {
         command: "!mode",
         description: "呼び出しモードを指定します。",
         options: [
@@ -158,6 +163,10 @@ module.exports = {
 
         if (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "") {
             await sendHelpText(client, message);
+            return;
+        }
+
+        if (containsCommand(currentCommands,"!noreply")) {
             return;
         }
 
