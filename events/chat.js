@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.3.18";
+const rev = "v1.4.0";
 const isDev = false;
 
 const commandList = [
