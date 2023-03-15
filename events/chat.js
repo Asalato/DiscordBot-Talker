@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.4.0";
+const rev = "v1.4.4";
 const isDev = false;
 
 const commandList = [
@@ -82,13 +82,14 @@ function extractCommands(message) {
     while(true) {
         const current = formattedContent;
         commandList.forEach(c => {
-            const regex = new RegExp(`^\\s*${c.command}(=(\\S*))?`);
+            const regex = new RegExp(`^\\s*(${c.command})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|\\s)`);
             const match = formattedContent.match(regex);
             if (!match) return;
 
+            const parameter = match[6] ?? match[8];
             commands.push({
                 command: c.command,
-                parameter: match[2]
+                parameter: parameter
             });
             formattedContent = formattedContent.replace(match[0], "");
         });
