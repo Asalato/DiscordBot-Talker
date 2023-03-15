@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.4.5";
+const rev = "v1.5.0";
 const isDev = false;
 
 const commandList = [
@@ -148,7 +148,14 @@ module.exports = {
     once: false,
     async execute(client, message) {
         if (message.author.bot) return false;
-        if (!message.mentions.has(client.user)) return false;
+
+        while(true) {
+            const lastMessage = await messages.fetch(lastId);
+            if (lastMessage.mentions.has(client.user)) break;
+            if (!lastMessage.reference) return false;
+            lastId = lastMessage.reference.messageId;
+        }
+
         const currentCommands = extractCommands(message);
         if (isDev) console.log(currentCommands);
 
