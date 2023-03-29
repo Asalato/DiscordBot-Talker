@@ -41,6 +41,14 @@ const commandList = [
             {
                 name: "stream",
                 description: "メッセージをストリームとして返却します（β）。"
+            },
+            {
+                name: "gpt-4",
+                description: "GPT-4モデルを利用します"
+            },
+            {
+                name: "gpt-3",
+                description: "GPT-3モデルを利用します"
             }
         ],
         hasOption: true
@@ -188,6 +196,7 @@ module.exports = {
         const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
+        let modelMode = "gpt-4";
         lastId = message.id;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
@@ -203,11 +212,17 @@ module.exports = {
                 if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
                 let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
-                if (containsCommand(commands, "!version")) {
+                if (containsCommand(commands, "!role")) {
                     const parameter = commands.commands.filter(c => c.command === "!role")[0].parameter;
                     if (parameter === "system") role = "system";
                     if (parameter === "bot") role = "assistant";
                     if (parameter === "user") role = "user";
+                }
+
+                if (containsCommand(commands, "mode")) {
+                    const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
+                    if (parameter === "gpt-4") modelMode = "gpt-4";
+                    if (parameter === "gpt-3") modelMode = "gpt-3.5-turbo";
                 }
 
                 const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
@@ -232,7 +247,7 @@ module.exports = {
 
             if (useStream) {
                 const completion = await openai.createChatCompletion({
-                    model: "gpt-3.5-turbo",
+                    model: modelMode,
                     messages: dialog,
                     temperature: 0.2,
                     stream: true,
@@ -329,7 +344,7 @@ module.exports = {
                 }, 1000);
 
                 openai.createChatCompletion({
-                    model: "gpt-3.5-turbo",
+                    model: modelMode,
                     messages: dialog,
                     temperature: 0.2,
                     user: message.author.id
