@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.6.1";
+const rev = "v1.6.2";
 const isDev = false;
 
 const commandList = [
@@ -43,12 +43,12 @@ const commandList = [
                 description: "メッセージをストリームとして返却します（β）。"
             },
             {
-                name: "gpt-4",
+                name: "gpt4",
                 description: "GPT-4モデルを利用します"
             },
             {
-                name: "gpt-3",
-                description: "GPT-3モデルを利用します"
+                name: "gpt3",
+                description: "GPT-3モデルを利用します（デフォルト）"
             }
         ],
         hasOption: true
@@ -196,7 +196,7 @@ module.exports = {
         const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
-        let modelMode = "gpt-4";
+        let modelMode = "gpt-3.5-turbo";
         lastId = message.id;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
@@ -221,8 +221,8 @@ module.exports = {
 
                 if (containsCommand(commands, "mode")) {
                     const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
-                    if (parameter === "gpt-4") modelMode = "gpt-4";
-                    if (parameter === "gpt-3") modelMode = "gpt-3.5-turbo";
+                    if (parameter === "gpt4") modelMode = "gpt-4";
+                    if (parameter === "gpt3") modelMode = "gpt-3.5-turbo";
                 }
 
                 const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
