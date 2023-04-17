@@ -77,8 +77,13 @@ function containsCommand(commands, command, param = undefined) {
 function splitText(text) {
     const maxLength = 1200;
     const result = [];
+    let isLastInnerCodeBlock = false;
     for (let i = 0; i < Math.ceil(text.length / maxLength); i++) {
-        result.push(text.slice(i * maxLength, (i + 1) * maxLength));
+        let split = text.slice(i * maxLength, (i + 1) * maxLength);
+        if (isLastInnerCodeBlock) split = "```" + split;
+        isLastInnerCodeBlock = split.match(/```/gm).length % 2 === 1;
+        if (isLastInnerCodeBlock) split = split + "```";
+        result.push(split);
     }
     return result;
 }
@@ -193,7 +198,7 @@ module.exports = {
         let dialog = [];
         const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
         const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
-        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Please use these information only when necessary. They must also treat this information as their own knowledge and keep the fact that it was given to you a secret. Please return responses to the following statements in the form of response statements only. Language should follow the statement. Response is presented in markdown format`;
+        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
         let modelMode = "gpt-3.5-turbo";
@@ -282,12 +287,8 @@ module.exports = {
                                     if (tempResponseStr.length > 1200){
                                         await tempResponse.delete();
                                         const split = splitText(tempResponseStr);
-                                        let isInnerQuote = false;
                                         for (let i = 0; i < split.length - 1; ++i) {
-                                            let res = (isInnerQuote ? "```\n" : "") + split[i];
-                                            if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
-                                            if (isInnerQuote) res += "\n```";
-                                            tempResponse = await message.reply(res);
+                                            tempResponse = await message.reply(split[i]);
                                         }
                                         tempResponseStr = split[split.length - 1];
                                     } else {
@@ -296,12 +297,8 @@ module.exports = {
                                 }
                                 else {
                                     const split = splitText(tempResponseStr);
-                                    let isInnerQuote = false;
                                     for (let i = 0; i < split.length - 1; ++i) {
-                                        let res = (isInnerQuote ? "```\n" : "") + split[i];
-                                        if ((split[i].split("```").length - 1) % 2 !== 0) isInnerQuote = !isInnerQuote;
-                                        if (isInnerQuote) res += "\n```";
-                                        tempResponse = await message.reply(res);
+                                        tempResponse = await message.reply(split[i]);
                                     }
                                     tempResponseStr = split[split.length - 1];
                                 }
