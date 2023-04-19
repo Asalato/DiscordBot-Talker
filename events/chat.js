@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.6.2";
+const rev = "v1.6.4";
 const isDev = false;
 
 const commandList = [
@@ -81,7 +81,8 @@ function splitText(text) {
     for (let i = 0; i < Math.ceil(text.length / maxLength); i++) {
         let split = text.slice(i * maxLength, (i + 1) * maxLength);
         if (isLastInnerCodeBlock) split = "```" + split;
-        isLastInnerCodeBlock = split.match(/```/gm).length % 2 === 1;
+        const match = split.match(/```/gm);
+        isLastInnerCodeBlock = !!match ? match.length % 2 === 1 : false;
         if (isLastInnerCodeBlock) split = split + "```";
         result.push(split);
     }
