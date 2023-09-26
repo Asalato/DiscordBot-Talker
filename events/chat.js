@@ -163,6 +163,7 @@ module.exports = {
     async execute(client, message) {
         if (message.author.bot) return false;
         if (message.mentions.users.size > 0 && !message.mentions.has(client.user)) return false;
+        if (message.mention_everyone) return false;
 
         const messages = message.channel.messages;
         let lastId = message.id;
