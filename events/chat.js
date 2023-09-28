@@ -1,6 +1,6 @@
 const {Configuration, OpenAIApi} = require("openai");
 
-const rev = "v1.6.4";
+const rev = "v1.7.1";
 const isDev = false;
 
 const commandList = [
@@ -163,7 +163,6 @@ module.exports = {
     async execute(client, message) {
         if (message.author.bot) return false;
         if (message.mentions.users.size > 0 && !message.mentions.has(client.user)) return false;
-        if (message.content.includes('@here') || message.content.includes('@everyone')) return false;
 
         const messages = message.channel.messages;
         let lastId = message.id;
@@ -196,8 +195,6 @@ module.exports = {
             return;
         }
 
-        await message.channel.sendTyping();
-
         let dialog = [];
         const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
         const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
@@ -206,15 +203,22 @@ module.exports = {
 
         let modelMode = "gpt-3.5-turbo";
         lastId = message.id;
+        let isBotMentioned = true;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
+
+            // 最後にメンションされた対象が全体メンションで、かつ最初に直接のメンションがない場合は返信しない
+            if (lastMessage.mentions.users.size > 0 && lastMessage.mentions.has(client.user))
+                isBotMentioned = true;
+            if (lastMessage.mentions.everyone || lastMessage.content.includes('@here') || lastMessage.content.includes('@everyone'))
+                isBotMentioned = false;
 
             const commands = extractCommands(lastMessage);
             if (containsCommand(commands, "!help") || containsCommand(commands, "!version")){
 
             }
             if (containsCommand(commands, "!dev") ? !isDev : isDev){
-
+                await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
             } else {
                 const initMsg = commands.commands.filter(c => c.command === "!init");
                 if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
@@ -244,6 +248,10 @@ module.exports = {
             if (!lastMessage.reference) break;
             lastId = lastMessage.reference.messageId;
         }
+
+        if (!isBotMentioned) return false;
+
+        await message.channel.sendTyping();
 
         const configuration = new Configuration({
             apiKey: process.env.OPENAI_SECRET_KEY
