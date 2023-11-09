@@ -1,7 +1,14 @@
-const {Configuration, OpenAIApi} = require("openai");
+const OpenAIApi = require("openai");
 
-const rev = "v1.7.3";
+const rev = "v2.0.7";
 const isDev = false;
+
+const GPT3_MODEL_NAME = "gpt-3.5-turbo-1106";
+const GPT4_MODEL_NAME = "gpt-4-vision-preview";
+
+let max_token_length = {}
+max_token_length[GPT3_MODEL_NAME] = 4096;
+max_token_length[GPT4_MODEL_NAME] = 4096;
 
 const commandList = [
     {
@@ -44,11 +51,11 @@ const commandList = [
             },
             {
                 name: "gpt4",
-                description: "GPT-4モデルを利用します"
+                description: `GPT-4モデルを利用します。現在のモデルは[${GPT4_MODEL_NAME}](https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo)です。`
             },
             {
                 name: "gpt3",
-                description: "GPT-3モデルを利用します（デフォルト）"
+                description: `GPT-3モデルを利用します（デフォルト）。現在のモデルは[${GPT3_MODEL_NAME}](https://platform.openai.com/docs/models/gpt-3-5)です。`
             }
         ],
         hasOption: true
@@ -141,6 +148,12 @@ function replaceMentionsWithUsernames(mentions, content) {
     return content;
 }
 
+
+function isMentioned(client, message) {
+    if (message.mentions.users.size > 0 && message.mentions.users.has(client.user.id)) return true;
+    return message.mentions.roles.size > 0 && message.mentions.roles.filter(x => x.tags.botId === client.user.id).size > 0;
+}
+
 async function sendHelpText(client, message) {
     let commandDesc = commandList.map(c => {
         let msg = `>\ ◦\ \`${c.command}\`\t${c.description}`;
@@ -154,14 +167,13 @@ async function sendHelpText(client, message) {
     }).join("\n");
     commandDesc = "\n🖊\ 利用可能なオプション一覧\n\t\tメッセージの先頭につけることで動作が変更されます。\n" + commandDesc
 
-    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? "(dev channel)" : "") + "\n" + commandDesc);
+    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc);
 }
 
 module.exports = {
     name: 'messageCreate',
     once: false,
     async execute(client, message) {
-        if (message.author.bot) return false;
         if (message.mentions.users.size > 0 && !message.mentions.has(client.user)) return false;
 
         const messages = message.channel.messages;
@@ -176,10 +188,8 @@ module.exports = {
         const currentCommands = extractCommands(message);
         if (isDev) console.log(currentCommands);
 
-        if (containsCommand(currentCommands,"!dev") ? !isDev : isDev) {
-            if (!isDev) await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
-            return;
-        }
+        let isModeDiff = containsCommand(currentCommands,"!dev") !== isDev;
+        let isStream = containsCommand(currentCommands,"!mode", "stream");
 
         if (containsCommand(currentCommands,"!noreply")) {
             return;
@@ -201,78 +211,78 @@ module.exports = {
         const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Response is presented in markdown format`;
         dialog.push({role: "system", content: initText});
 
-        let modelMode = "gpt-3.5-turbo";
+        let modelMode = GPT3_MODEL_NAME;
         lastId = message.id;
-        let isBotMentioned = message.mentions.users.size > 0 && message.mentions.has(client.user);
-        console.log(isBotMentioned)
+        let isBotMentioned = isMentioned(client, message);
+        let isImageAttached = false;
         while(true) {
             const lastMessage = await messages.fetch(lastId);
 
             // 最後にメンションされた対象が全体メンションで、かつ直接のメンションがない場合は返信しない
-            if (lastMessage.mentions.users.size > 0 && lastMessage.mentions.has(client.user))
-                isBotMentioned = true;
+            if (isMentioned(client, lastMessage)) isBotMentioned = true;
 
             const commands = extractCommands(lastMessage);
-            if (containsCommand(commands, "!help") || containsCommand(commands, "!version")){
+            if (containsCommand(commands, "!dev") === isDev) isModeDiff = false;
+            if (containsCommand(currentCommands,"!mode", "stream")) isStream = true;
 
+
+            const initMsg = commands.commands.filter(c => c.command === "!init");
+            if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
+
+            let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
+            if (containsCommand(commands, "!role")) {
+                const parameter = commands.commands.filter(c => c.command === "!role")[0].parameter;
+                if (parameter === "system") role = "system";
+                if (parameter === "bot") role = "assistant";
+                if (parameter === "user") role = "user";
             }
-            if (containsCommand(commands, "!dev")){
-                if (!isDev) {
-                    await message.reply("```diff\n-devチャネルではないため、要求は却下されました。。\n```");
-                    return;
-                }
-            } else {
-                const initMsg = commands.commands.filter(c => c.command === "!init");
-                if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
-                let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
-                if (containsCommand(commands, "!role")) {
-                    const parameter = commands.commands.filter(c => c.command === "!role")[0].parameter;
-                    if (parameter === "system") role = "system";
-                    if (parameter === "bot") role = "assistant";
-                    if (parameter === "user") role = "user";
-                }
+            if (containsCommand(commands, "mode")) {
+                const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
+                if (parameter === "gpt4" || isImageAttached) modelMode = GPT4_MODEL_NAME;
+                else if (parameter === "gpt3") modelMode = GPT3_MODEL_NAME;
+            }
 
-                if (containsCommand(commands, "mode")) {
-                    const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
-                    if (parameter === "gpt4") modelMode = "gpt-4";
-                    if (parameter === "gpt3") modelMode = "gpt-3.5-turbo";
-                }
+            const questionStr = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
+            let content = [{type: "text", text: questionStr}];
 
-                const question = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
-                dialog.splice(1, 0, {role: role, content: question/*, name: lastMessage.author.username*/});
-
-                if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
-                    dialog.slice(0, dialog.length - 1);
-                    break;
+            if (message.attachments.size > 0 && role !== "system") {
+                isImageAttached = true;
+                modelMode = GPT4_MODEL_NAME;
+                let attachment_urls = [...message.attachments.values()].map(x => x.url);
+                for (let i = 0; i < attachment_urls.length; ++i) {
+                    //if (['png', 'jpeg', 'gif', 'webp'].some(c => new URL(attachment_urls[i]).pathname.endsWith(c)))
+                    content.push({type: "image_url", image_url: attachment_urls[i]})
                 }
             }
+
+            dialog.splice(1, 0, {role: role, content: content});
+
+            if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
+                dialog.slice(0, dialog.length - 1);
+                break;
+            }
+
             if (!lastMessage.reference) break;
             lastId = lastMessage.reference.messageId;
         }
 
-        if (!isBotMentioned) return false;
+        if (!isBotMentioned || isModeDiff) return false;
 
         await message.channel.sendTyping();
-
-        const configuration = new Configuration({
-            apiKey: process.env.OPENAI_SECRET_KEY
-        });
-        const openai = new OpenAIApi(configuration);
+        const openai = new OpenAIApi.OpenAI({apiKey: process.env.OPENAI_SECRET_KEY});
 
         try {
-            const useStream = containsCommand(currentCommands,"!mode", "stream");
-
-            if (useStream) {
-                const completion = await openai.createChatCompletion({
+            if (isStream) {
+                await message.channel.sendTyping();
+                const stream = await openai.chat.completions.create({
+                    stream: true,
                     model: modelMode,
                     messages: dialog,
                     temperature: 0.2,
-                    stream: true,
-                    user: message.author.id
-                }, {
-                    responseType: 'stream'
-                })
+                    user: message.author.id,
+                    max_tokens: max_token_length[modelMode]
+                });
 
                 let tempResponse = undefined;
                 let tempResponseStr = "";
@@ -329,38 +339,27 @@ module.exports = {
                     }
                 }, 500);
 
-                completion.data.on('data', async data => {
-                    const lines = data.toString().split('\n').filter(line => line.trim() !== '');
-                    for (const line of lines) {
-                        const str = line.replace(/^data: /, '');
-                        if (str === '[DONE]') {
-                            isEnd = true;
-                            return;
-                        }
-                        try {
-                            const parsed = JSON.parse(str);
-                            const fragment = parsed.choices[0].delta?.content;
-                            if(fragment) tempResponseStr += fragment;
-                        } catch (error) {
-                            errorStr = 'Could not JSON parse stream message' + str + error;
-                            console.error('Could not JSON parse stream message', str, error);
-                            return;
-                        }
+                for await (const chunk of stream) {
+                    if (chunk.choices[0]?.finish_reason !== null) {
+                        isEnd = true;
+                        return;
                     }
-                })
+                    tempResponseStr += chunk.choices[0]?.delta?.content || '';
+                }
             } else {
                 const typing = setInterval(async () => {
                     await message.channel.sendTyping();
                 }, 1000);
 
-                openai.createChatCompletion({
+                openai.chat.completions.create({
                     model: modelMode,
                     messages: dialog,
                     temperature: 0.2,
-                    user: message.author.id
+                    user: message.author.id,
+                    max_tokens: max_token_length[modelMode]
                 }).then(async (res) => {
                     clearInterval(typing);
-                    const split = splitText(res.data.choices[0].message.content);
+                    const split = splitText(res.choices[0].message.content);
                     for (let i = 0; i < split.length; ++i) {
                         await message.reply(split[i])
                     }
