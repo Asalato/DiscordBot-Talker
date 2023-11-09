@@ -1,6 +1,6 @@
 const OpenAIApi = require("openai");
 
-const rev = "v2.0.7";
+const rev = "v2.0.8";
 const isDev = false;
 
 const GPT3_MODEL_NAME = "gpt-3.5-turbo-1106";
