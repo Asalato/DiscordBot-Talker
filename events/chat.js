@@ -237,7 +237,7 @@ module.exports = {
                 if (parameter === "user") role = "user";
             }
 
-            if (containsCommand(commands, "mode")) {
+            if (containsCommand(commands, "!mode")) {
                 const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
                 if (parameter === "gpt4" || isImageAttached) modelMode = GPT4_MODEL_NAME;
                 else if (parameter === "gpt3") modelMode = GPT3_MODEL_NAME;
