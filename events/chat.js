@@ -223,8 +223,6 @@ module.exports = {
 
             const commands = extractCommands(lastMessage);
             if (containsCommand(commands, "!dev") === isDev) isModeDiff = false;
-            if (containsCommand(currentCommands,"!mode", "stream")) isStream = true;
-
 
             const initMsg = commands.commands.filter(c => c.command === "!init");
             if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
@@ -244,20 +242,21 @@ module.exports = {
             }
 
             const questionStr = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
-            let content = [{type: "text", text: questionStr}];
+            let content = questionStr !== "" ? [{type: "text", text: questionStr}] : [];
 
-            if (message.attachments.size > 0 && role !== "system") {
+            if (lastMessage.attachments.size > 0 && role !== "system") {
                 isImageAttached = true;
                 modelMode = GPT4_MODEL_NAME;
-                let attachment_urls = [...message.attachments.values()].map(x => x.url);
+                let attachment_urls = [...lastMessage.attachments.values()].map(x => x.url);
                 for (let i = 0; i < attachment_urls.length; ++i) {
                     //if (['png', 'jpeg', 'gif', 'webp'].some(c => new URL(attachment_urls[i]).pathname.endsWith(c)))
                     content.push({type: "image_url", image_url: attachment_urls[i]})
                 }
             }
 
-            dialog.splice(1, 0, {role: role, content: content});
+            if (content.length !== 0) dialog.splice(1, 0, {role: role, content: content});
 
+            // 規定数を超えた場合はもっとも古い投稿を削除し、探索を終了する
             if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
                 dialog.slice(0, dialog.length - 1);
                 break;
