@@ -3,7 +3,7 @@ const {extractCommands, containsCommand, sendHelpText, isMentioned, replaceMenti
     getFileText
 } = require("../utils");
 
-const rev = "v2.1.0";
+const rev = "v2.1.1";
 const isDev = false;
 
 const GPT3_MODEL_NAME = "gpt-3.5-turbo-1106";
@@ -134,14 +134,14 @@ module.exports = {
 
             const files = [];
             if (lastMessage.attachments.size > 0) {
-                isImageAttached = true;
-                modelMode = GPT4_MODEL_NAME;
                 let attachment_urls = [...lastMessage.attachments.values()].map(x => x.url);
                 for (let i = 0; i < attachment_urls.length; ++i) {
                     const pathname = new URL(attachment_urls[i]).pathname;
-                    if (['png', 'jpeg', 'gif', 'webp'].some(c => pathname.endsWith(c)))
+                    if (['png', 'jpeg', 'gif', 'webp'].some(c => pathname.endsWith(c))) {
+                        isImageAttached = true;
+                        modelMode = GPT4_MODEL_NAME;
                         content.push({type: "image_url", image_url: attachment_urls[i]});
-                    else {
+                    } else {
                         const fileText = await getFileText(attachment_urls[i]);
                         if (!!fileText) files.push({'name': pathname.split('/').at(-1), 'content': fileText});
                     }
