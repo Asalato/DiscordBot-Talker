@@ -1,6 +1,9 @@
 const OpenAIApi = require("openai");
+const {extractCommands, containsCommand, sendHelpText, isMentioned, replaceMentionsWithUsernames, splitText,
+    getFileText
+} = require("../utils");
 
-const rev = "v2.0.8";
+const rev = "v2.1.0";
 const isDev = false;
 
 const GPT3_MODEL_NAME = "gpt-3.5-turbo-1106";
@@ -12,25 +15,6 @@ max_token_length[GPT4_MODEL_NAME] = 4096;
 
 const commandList = [
     {
-        command: "!role",
-        description: "そのメッセージを特定のロールの発言として送信します。",
-        options: [
-            {
-                name: "system",
-                description: "天の声（システムメッセージ）として発言します。"
-            },
-            {
-                name: "user",
-                description: "ユーザーとして発言します（デフォルト）。"
-            },
-            {
-                name: "bot",
-                description: "ボット（ChatGPT）側の過去の発言としてマークします。"
-            }
-        ],
-        hasOption: true
-    },
-    {
         command: "!init",
         description: "最初のシステムメッセージをこのテキストに置き換えます。",
         optionDescription: "システムメッセージ、ダブルクオーテーションで囲んでもよい任意のテキスト。",
@@ -38,7 +22,7 @@ const commandList = [
     },
     {
         command: "!noreply",
-        description: "このコマンドが指定されたメッセージへの直接のリプライは行われません。（メッセージへのリプライでは読まれます。initやroleを指定する際に利用ください。）",
+        description: "このコマンドが指定されたメッセージへの直接のリプライは行われません。（メッセージへのリプライでは読まれます。initを指定する際に利用ください。）",
         hasOption: false
     },
     {
@@ -75,100 +59,12 @@ const commandList = [
         description: "バージョンのみを返します。",
         hasOption: false
     }
-]
+];
 
-function containsCommand(commands, command, param = undefined) {
-    return commands.commands.filter(c => c.command === command).filter(c => param === undefined || c.parameter === param).length !== 0
-}
-
-function splitText(text) {
-    const maxLength = 1200;
-    const result = [];
-    let isLastInnerCodeBlock = false;
-    for (let i = 0; i < Math.ceil(text.length / maxLength); i++) {
-        let split = text.slice(i * maxLength, (i + 1) * maxLength);
-        if (isLastInnerCodeBlock) split = "```" + split;
-        const match = split.match(/```/gm);
-        isLastInnerCodeBlock = !!match ? match.length % 2 === 1 : false;
-        if (isLastInnerCodeBlock) split = split + "```";
-        result.push(split);
-    }
-    return result;
-}
-
-function extractCommands(message) {
-    let formattedContent = message.content.replace(/^<@[!&]?\d+>\s+/, '').trim();
-
-    const commands = [];
-    while(true) {
-        const current = formattedContent;
-        commandList.forEach(c => {
-            const regex = new RegExp(`^\\s*(${c.command})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|(\\s|$))`);
-            const match = formattedContent.match(regex);
-            if (!match) return;
-
-            const parameter = match[6] ?? match[8];
-            commands.push({
-                command: c.command,
-                parameter: parameter
-            });
-            formattedContent = formattedContent.replace(match[0], "");
-        });
-        if (formattedContent === current) break;
-    }
-
-    return {
-        message: formattedContent,
-        commands: commands
-    };
-}
-
-function replaceMentionsWithUsernames(mentions, content) {
-    mentions.members.forEach((member) => {
-        const mention = `<@!${member.id}>`;
-        const username = member.displayName;
-        const replacement = `${username}へ:`;
-        content = content.replace(mention, replacement);
-    });
-
-    mentions.roles.forEach((role) => {
-        const mention = `<@&${role.id}>`;
-        const roleName = role.name;
-        const replacement = `${roleName}へ:`;
-        content = content.replace(mention, replacement);
-    });
-
-    mentions.users.forEach((user) => {
-        const mention = `<@${user.id}>`;
-        const username = user.username;
-        const replacement = `${username}へ: `;
-        content = content.replace(mention, replacement);
-    });
-
-    return content;
-}
-
-
-function isMentioned(client, message) {
-    if (message.mentions.users.size > 0 && message.mentions.users.has(client.user.id)) return true;
-    return message.mentions.roles.size > 0 && message.mentions.roles.filter(x => x.tags.botId === client.user.id).size > 0;
-}
-
-async function sendHelpText(client, message) {
-    let commandDesc = commandList.map(c => {
-        let msg = `>\ ◦\ \`${c.command}\`\t${c.description}`;
-        if (c.hasOption)
-            msg += "\n>\ \t\tオプション\n";
-        if (c.hasOption && c.optionDescription)
-            msg += ">\ \t\t\t" + c.optionDescription;
-        if (c.options && c.options.length > 0)
-            msg += c.options.map(o => ">\ \t\t\t◦\ `" + o.name + "`" + (o.description ? ("\t" + o.description) : "")).join("\n");
-        return msg;
-    }).join("\n");
-    commandDesc = "\n🖊\ 利用可能なオプション一覧\n\t\tメッセージの先頭につけることで動作が変更されます。\n" + commandDesc
-
-    await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc);
-}
+const releaseNote = `
+v2.0.0  gpt4-visionに対応し、画像の読み込みが可能になりました
+v2.1.0  テキストファイルの読み込みに対応しました。
+`;
 
 module.exports = {
     name: 'messageCreate',
@@ -185,7 +81,7 @@ module.exports = {
             lastId = lastMessage.reference.messageId;
         }
 
-        const currentCommands = extractCommands(message);
+        const currentCommands = extractCommands(commandList, message);
         if (isDev) console.log(currentCommands);
 
         let isModeDiff = containsCommand(currentCommands,"!dev") !== isDev;
@@ -200,8 +96,8 @@ module.exports = {
             return;
         }
 
-        if (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "") {
-            await sendHelpText(client, message);
+        if (!isModeDiff && (containsCommand(currentCommands,"!help") || currentCommands.message.replace(/\s/, "") === "")) {
+            await sendHelpText(rev, isDev, commandList, client, message, releaseNote);
             return;
         }
 
@@ -221,19 +117,11 @@ module.exports = {
             // 最後にメンションされた対象が全体メンションで、かつ直接のメンションがない場合は返信しない
             if (isMentioned(client, lastMessage)) isBotMentioned = true;
 
-            const commands = extractCommands(lastMessage);
+            const commands = extractCommands(commandList, lastMessage);
             if (containsCommand(commands, "!dev") === isDev) isModeDiff = false;
 
             const initMsg = commands.commands.filter(c => c.command === "!init");
             if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
-
-            let role = lastMessage.author.username === client.user.username ? "assistant" : "user";
-            if (containsCommand(commands, "!role")) {
-                const parameter = commands.commands.filter(c => c.command === "!role")[0].parameter;
-                if (parameter === "system") role = "system";
-                if (parameter === "bot") role = "assistant";
-                if (parameter === "user") role = "user";
-            }
 
             if (containsCommand(commands, "!mode")) {
                 const parameter = commands.commands.filter(c => c.command === "!mode")[0].parameter;
@@ -244,17 +132,31 @@ module.exports = {
             const questionStr = replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
             let content = questionStr !== "" ? [{type: "text", text: questionStr}] : [];
 
-            if (lastMessage.attachments.size > 0 && role !== "system") {
+            const files = [];
+            if (lastMessage.attachments.size > 0) {
                 isImageAttached = true;
                 modelMode = GPT4_MODEL_NAME;
                 let attachment_urls = [...lastMessage.attachments.values()].map(x => x.url);
                 for (let i = 0; i < attachment_urls.length; ++i) {
-                    //if (['png', 'jpeg', 'gif', 'webp'].some(c => new URL(attachment_urls[i]).pathname.endsWith(c)))
-                    content.push({type: "image_url", image_url: attachment_urls[i]})
+                    const pathname = new URL(attachment_urls[i]).pathname;
+                    if (['png', 'jpeg', 'gif', 'webp'].some(c => pathname.endsWith(c)))
+                        content.push({type: "image_url", image_url: attachment_urls[i]});
+                    else {
+                        const fileText = await getFileText(attachment_urls[i]);
+                        if (!!fileText) files.push({'name': pathname.split('/').at(-1), 'content': fileText});
+                    }
                 }
             }
 
+            const role = lastMessage.author.username === client.user.username ? "assistant" : "user";
             if (content.length !== 0) dialog.splice(1, 0, {role: role, content: content});
+            for (let i = 0; i < files.length; ++i) {
+                const file = files[files.length - i - 1];
+                dialog.splice(1, 0, {
+                    role: 'system',
+                    content: "Below are the contents of the file given by the user. The file name is \"" + file.name + "\". Use it as context if necessary.\n" + file.content
+                });
+            }
 
             // 規定数を超えた場合はもっとも古い投稿を削除し、探索を終了する
             if (JSON.stringify(dialog).length > 2038 || dialog.length > 10) {
