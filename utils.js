@@ -1,11 +1,11 @@
-const fetch = require('node-fetch')
-const pdf = require('pdf-parse');
+import fetch from 'node-fetch';
+import pdf from 'pdf-parse/lib/pdf-parse.js';
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-module.exports = {
+export default {
     trySimpleReplyWhenContainsArray: async function(candArr, replyArr, message) {
         await sleep(500);
         for (let i = 0; i < candArr.length; ++i) {
@@ -56,17 +56,44 @@ module.exports = {
         return commands.commands.filter(c => c.command === command).filter(c => param === undefined || c.parameter === param).length !== 0
     },
     splitText: function (text) {
-        const maxLength = 1200;
+        const maxLength = 2000;
+
         const result = [];
-        let isLastInnerCodeBlock = false;
-        for (let i = 0; i < Math.ceil(text.length / maxLength); i++) {
-            let split = text.slice(i * maxLength, (i + 1) * maxLength);
-            if (isLastInnerCodeBlock) split = "```" + split;
-            const match = split.match(/```/gm);
-            isLastInnerCodeBlock = !!match ? match.length % 2 === 1 : false;
-            if (isLastInnerCodeBlock) split = split + "```";
-            result.push(split);
+
+        // 暫定的に、改行文字で分割
+        const split = text.split("\n");
+
+        // splitした結果を2000文字を超えない範囲で結合し、resultに追加
+        let current = "";
+        for (let i = 0; i < split.length; ++i) {
+            let chunk = split[i];
+            if (current.length + chunk.length > maxLength) {
+                result.push(current);
+                current = "";
+            }
+
+            // splitした結果が単体で2000文字を超える場合は、超過しなくなるまでresultに追加
+            while (chunk.length > maxLength) {
+                result.push(chunk.substring(0, maxLength));
+                chunk = chunk.substring(maxLength);
+            }
+
+            current += chunk + "\n";
         }
+        result.push(current);
+
+        // 各ブロックを検査し、中に「```(\w+)\n」でマッチされる行が奇数個存在した場合、そのブロックの末尾に「```」を追加
+        // また、「(\w)+」でマッチされる、コードブロックの言語名を変数に格納し、次ブロックの先頭に「```${lang_name}\n」を追加
+        const codeBlock = /```(\w+)\n/g;
+        for (let i = 0; i < result.length; ++i) {
+            const match = result[i].match(codeBlock);
+            if (!match) continue;
+            if (match.length % 2 === 0) continue;
+            result[i] += "```";
+            const lang = match[match.length - 1];
+            result[i + 1] = "```" + lang + "\n" + result[i + 1];
+        }
+
         return result;
     },
     extractCommands: function (commandList, message) {
@@ -76,7 +103,9 @@ module.exports = {
         while(true) {
             const current = formattedContent;
             commandList.forEach(c => {
-                const regex = new RegExp(`^\\s*(${c.command})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|(\\s|$))`);
+                const matchPattern = [c.command, ...c.alias].join("|")
+
+                const regex = new RegExp(`^\\s*(${matchPattern})((=(("((?:\\.|[^\\"])*)("|$))|(\\S*)?(\\s|$)))|(\\s|$))`);
                 const match = formattedContent.match(regex);
                 if (!match) return;
 
@@ -125,18 +154,21 @@ module.exports = {
     },
     sendHelpText: async function (rev, isDev, commandList, client, message, releaseNote) {
         let commandDesc = commandList.map(c => {
-            let msg = `>\ ◦\ \`${c.command}\`\t${c.description}`;
+            let msg = `>\ ◦\ \`${c.command}\` [${c.alias.map(a => "`" + a + "`")}]\t${c.description}`;
             if (c.hasOption)
                 msg += "\n>\ \t\tオプション\n";
             if (c.hasOption && c.optionDescription)
                 msg += ">\ \t\t\t" + c.optionDescription;
             if (c.options && c.options.length > 0)
-                msg += c.options.map(o => ">\ \t\t\t◦\ `" + o.name + "`" + (o.description ? ("\t" + o.description) : "")).join("\n");
+                msg += c.options.map(o => ">\ \t\t\t◦\ `" + o.name + "`"+ (o.description ? ("\t" + o.description) : "")).join("\n");
             return msg;
         }).join("\n");
         commandDesc = "\n🖊\ 利用可能なオプション一覧\n\t\tメッセージの先頭につけることで動作が変更されます。\n" + commandDesc
 
-        await message.reply("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc + "\n\n**Change Note:**" + releaseNote);
+        const split = this.splitText("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc + "\n\n**Change Note:**" + releaseNote);
+        for (let i = 0; i < split.length; ++i) {
+            await message.reply(split[i])
+        }
     },
     getFileText: async (url) => {
         const pathname =  new URL(url).pathname;

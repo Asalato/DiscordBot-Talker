@@ -1,14 +1,18 @@
 {
+  "type": "module",
   "dependencies": {
     "@discordjs/rest": "^1.0.1",
+    "@langchain/google-genai": "^0.0.10",
+    "@langchain/openai": "^0.0.15",
     "chatgpt": "^2.0.6",
     "discord.js": "^14.1.2",
     "dotenv": "^16.0.3",
     "eslint-config-prettier": "^8.5.0",
+    "langchain": "^0.1.25",
     "node-fetch": "^2.7.0",
     "openai": "^4.16.1",
-    "prettier": "^2.7.1",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "prettier": "^2.7.1"
   },
   "devDependencies": {
     "eslint": "^8.21.0"

@@ -1,12 +1,17 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const {registerCommands} = require("./register");
-const GuildStore = require("./guildStore");
-require('dotenv').config();
+import fs from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'url';
+import path from 'node:path';
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import register from "./register.js";
+import GuildStore from "./guildStore.js";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 client.commands = new Collection();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const commandsPath = path.join(__dirname, 'commands');
 if (fs.existsSync(commandsPath)) {
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -22,14 +27,14 @@ const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
 for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = require(filePath);
-    if (!event.name) continue;
-    if (event.once) {
-        client.once(event.name, async (...args) => await event.execute(client, ...args));
-    } else {
-        client.on(event.name, async (...args) => await event.execute(client, ...args));
-    }
+    import(pathToFileURL(path.join(eventsPath, file)).href).then(event => {
+        if (!event.default.name) return;
+        if (event.default.once) {
+            client.once(event.default.name, async (...args) => await event.default.execute(client, ...args));
+        } else {
+            client.on(event.default.name, async (...args) => await event.default.execute(client, ...args));
+        }
+    })
 }
 
 client.on('interactionCreate', async interaction => {
@@ -48,13 +53,13 @@ client.on('interactionCreate', async interaction => {
 client.on('guildCreate', async guild => {
     const { id } = guild;
     await GuildStore.setId(id);
-    await registerCommands(id);
+    await register.registerCommands(id);
 });
 
 (async () => {
     const ids = await GuildStore.getAllIds();
     for (const id of ids) {
-        await registerCommands(id);
+        await register.registerCommands(id);
     }
 })();
 

@@ -1,7 +1,8 @@
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord.js');
-const fs = require('node:fs');
-require('dotenv').config();
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord.js';
+import fs from 'node:fs';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const commands = [];
 if (fs.existsSync('./commands')) {
@@ -15,7 +16,7 @@ if (fs.existsSync('./commands')) {
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-module.exports = {
+export default {
     registerCommands: async (guildId) => {
         try {
             await rest.put(

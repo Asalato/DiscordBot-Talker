@@ -1,10 +1,10 @@
-const fs = require('node:fs');
-const path = require("node:path");
+import fs from 'node:fs';
+import path from "node:path";
 
 let data = null;
 const fileName = './data/.guildStore';
 
-module.exports = class GuildStore {
+export default class GuildStore {
     static #save() {
         const dirName = path.dirname(fileName);
         if (!fs.existsSync(dirName)) {
