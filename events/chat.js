@@ -3,7 +3,7 @@ import utils from "../utils.js";
 import { fallBackModel, models, getModelFromName, getOutput } from "../models.js";
 
 const rev = "v3.1.3";
-const isDev = true;
+const isDev = false;
 
 const commandList = [
     {
