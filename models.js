@@ -92,7 +92,7 @@ export const models = {
     ),
     granite_8b_japanese: new Model(
         "ibm/granite-8b-japanese",
-        "granite-japanese",
+        "granite",
         ["granite", "granite-jp", "granite-8b-japanese", "granite-japanese"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#granite-8b-japanese",
         8192,

@@ -3,7 +3,7 @@ import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
 import { fallBackModel, models, getModel, getOutput } from "../models.js";
 
-const rev = "v3.2.0";
+const rev = "v3.2.1";
 const isDev = false;
 
 const commandList = [
