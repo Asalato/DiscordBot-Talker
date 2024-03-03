@@ -165,7 +165,7 @@ export default {
         }).join("\n");
         commandDesc = "\n🖊\ 利用可能なオプション一覧\n\t\tメッセージの先頭につけることで動作が変更されます。\n" + commandDesc
 
-        const split = this.splitText("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc + "\n\n**Change Note:**" + releaseNote);
+        const split = this.splitText("**_DiscordBot-Talker_** (https://github.com/Asalato/DiscordBot-Talker) by Asalato, Rev: **" + rev + "**" + (isDev ? " (**DEV CHANNEL**)" : "") + "\n" + commandDesc + "\n\n**Change Note:**\n" + releaseNote.map(r => ">\ " + r).join("\n"));
         for (let i = 0; i < split.length; ++i) {
             await message.reply(split[i])
         }

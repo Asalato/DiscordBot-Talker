@@ -2,7 +2,7 @@ import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages
 import utils from "../utils.js";
 import { fallBackModel, models, getModelFromName, getOutput } from "../models.js";
 
-const rev = "v3.1.4";
+const rev = "v3.1.5";
 const isDev = false;
 
 const commandList = [
@@ -51,10 +51,12 @@ const commandList = [
     }
 ];
 
-const releaseNote = `v2.0.0  gpt4-visionに対応し、画像の読み込みが可能になりました
-v2.1.0  テキストファイルの読み込みに対応しました。
-v3.0.0  LangChainを利用する形式に処理を変更し、使用可能なモデルを拡張しました。
-v3.1.0  watsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）`;
+const releaseNote = [
+    "v2.0.0\tgpt4-visionに対応し、画像の読み込みが可能になりました",
+    "v2.1.0\tテキストファイルの読み込みに対応しました。",
+    "v3.0.0\tLangChainを利用する形式に処理を変更し、使用可能なモデルを拡張しました。",
+    "v3.1.0\twatsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）"
+]
 
 export default {
     name: 'messageCreate',
