@@ -84,14 +84,13 @@ export default {
 
         // 各ブロックを検査し、中に「```(\w+)\n」でマッチされる行が奇数個存在した場合、そのブロックの末尾に「```」を追加
         // また、「(\w)+」でマッチされる、コードブロックの言語名を変数に格納し、次ブロックの先頭に「```${lang_name}\n」を追加
-        const codeBlock = /```(\w+)\n/g;
+        const codeBlock = /```(\w*)\n/g;
         for (let i = 0; i < result.length; ++i) {
             const match = result[i].match(codeBlock);
             if (!match) continue;
             if (match.length % 2 === 0) continue;
             result[i] += "```";
-            const lang = match[match.length - 1];
-            result[i + 1] = "```" + lang + "\n" + result[i + 1];
+            result[i + 1] = match[match.length - 1] + result[i + 1];
         }
 
         return result;

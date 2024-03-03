@@ -1,8 +1,9 @@
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import utils from "../utils.js";
-import { fallBackModel, models, getModelFromName, getOutput } from "../models.js";
+import ipu from "../imageProcessingUtils.js";
+import { fallBackModel, models, getModel, getOutput } from "../models.js";
 
-const rev = "v3.1.5";
+const rev = "v3.2.0";
 const isDev = false;
 
 const commandList = [
@@ -55,7 +56,8 @@ const releaseNote = [
     "v2.0.0\tgpt4-visionに対応し、画像の読み込みが可能になりました",
     "v2.1.0\tテキストファイルの読み込みに対応しました。",
     "v3.0.0\tLangChainを利用する形式に処理を変更し、使用可能なモデルを拡張しました。",
-    "v3.1.0\twatsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）"
+    "v3.1.0\twatsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）",
+    "v3.2.0\t大きい画像を添付した際に、自動で圧縮するようになりました。"
 ]
 
 export default {
@@ -123,9 +125,19 @@ export default {
             const message = utils.replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
             if (message.length !== 0){
                 if (lastMessage.author.username === client.user.username) {
-                    dialog.splice(1, 0, new AIMessage(message));
+                    dialog.splice(1, 0, new AIMessage({content: [
+                        {
+                            type: "text",
+                            text: message
+                        }
+                    ]}));
                 } else {
-                    dialog.splice(1, 0, new HumanMessage(message));
+                    dialog.splice(1, 0, new HumanMessage({content: [
+                        {
+                            type: "text",
+                            text: message
+                        }
+                    ]}));
                 }
             }
 
@@ -135,12 +147,18 @@ export default {
                     const pathname = new URL(attachment_urls[i]).pathname;
                     if (['png', 'jpeg', 'gif', 'webp'].some(c => pathname.endsWith(c))) {
                         isImageAttached = true;
-                        dialog.splice(1, 0, new HumanMessage(content=[{type: "image_url", image_url: attachment_urls[i]}]));
+                        dialog[dialog.length - 1].content.push({
+                            type: "image_url", 
+                            image_url: `data:image/jpeg;base64,${await ipu.getAndResizeImage(attachment_urls[i], [512, 512])}`
+                        });
                     } else {
                         const fileText = await utils.getFileText(attachment_urls[i]);
                         if (!!fileText) {
-                            const file = {name: pathname.split('/').at(-1), content: fileText};                        
-                            dialog.splice(1, 0, new SystemMessage("Below are the contents of the file given by the user. The file name is \"" + file.name + "\". Use it as context if necessary.\n" + file.content));
+                            const file = {name: pathname.split('/').at(-1), content: fileText};
+                            dialog[dialog.length - 1].content.push({
+                                type: "text", 
+                                text: "Below are the contents of the file given by the user. The file name is \"" + file.name + "\". Use it as context if necessary.\n" + file.content
+                            });
                         }
                     }
                 }
@@ -158,13 +176,8 @@ export default {
         }, 1000);
         
         try {
-            const model = getModelFromName(model_name);
-            // プロンプトがmax_token_lengthを超える場合は末端から削除
-            while(JSON.stringify(dialog).length > model.max_token_length - 100) {
-                dialog.slice(0, dialog.length - 1);
-            }
-
-            const response = await getOutput(model, isImageAttached, dialog);
+            const model = getModel(model_name, isImageAttached);
+            const response = await getOutput(model, dialog);
             clearInterval(typing);
             const split = utils.splitText(response);
             for (let i = 0; i < split.length; ++i) {
@@ -173,7 +186,7 @@ export default {
         } catch (err) {
             clearInterval(typing);
             console.log(err);
-            await message.reply("```diff\n-何らかの問題が発生しました。\n```");
+            await message.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
         }
     },
 };

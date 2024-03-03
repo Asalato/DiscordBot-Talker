@@ -7,7 +7,10 @@ import GuildStore from "./guildStore.js";
 import dotenv from 'dotenv';
 dotenv.config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
+const client = new Client({ 
+    autoReconnect: true,
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] 
+});
 client.commands = new Collection();
 
 const __filename = fileURLToPath(import.meta.url);
