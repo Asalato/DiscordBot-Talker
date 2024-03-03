@@ -152,6 +152,12 @@ export const modelfalimies = {
             ibmCloudApiKey: process.env.IBM_CLOUD_API_KEY,
             region: process.env.IBM_CLOUD_REGION,
             projectId: process.env.IBM_PROJECT_ID,
+            modelParameters: {
+                max_new_tokens: 4096,
+                min_new_tokens: 0,
+                stop_sequences: [],
+                repetition_penalty: 1,
+            }
         }),
         [
             models.granite_8b_japanese,
