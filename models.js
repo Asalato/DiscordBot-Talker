@@ -2,6 +2,7 @@ import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatAnthropic } from "@langchain/anthropic";
 import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
 
 export class ModelFamily {
@@ -90,6 +91,24 @@ export const models = {
         4096,
         {hidden: true, is_multimodal_supported: true}
     ),
+    claude3_opus: new Model(
+        "claude-3-opus-20240229", 
+        "claude3-opus",
+        ["opus", "claude3-opus", "claude-3-opus", "claude-opus"], 
+        "https://www.anthropic.com/news/claude-3-family",
+        200000,
+        4096,
+        {is_multimodal_supported: true}
+    ),
+    claude3_sonnet: new Model(
+        "claude-3-sonnet-20240229",
+        "claude3-sonnet",
+        ["sonnet", "claude3-sonnet", "claude-3-sonnet", "claude-sonnet", "claude-3", "claude", "anthropic", "claude3"],
+        "https://www.anthropic.com/news/claude-3-family",
+        200000,
+        4096,
+        {is_multimodal_supported: true}
+    ),
     granite_8b_japanese: new Model(
         "ibm/granite-8b-japanese",
         "granite",
@@ -154,6 +173,17 @@ export const modelfalimies = {
             models.gemini_pro_vision
         ]
     ),
+    anthropic: new ModelFamily(
+        "anthropic",
+        (model) => new ChatAnthropic({
+            anthropicApiKey: process.env.ANTHROPIC_SECRET_KEY,
+            modelName: model.name
+        }),
+        [
+            models.claude3_opus,
+            models.claude3_sonnet
+        ]
+    ),
     watsonx: new ModelFamily(
         "watsonx",
         (model) => new WatsonxAI({
@@ -177,7 +207,7 @@ export const modelfalimies = {
     )
 };
 
-export const fallBackModel = models.gpt3;
+export const fallBackModel = models.claude3_sonnet;
 
 export const getFamily = (model) => {
     const family = Object.values(modelfalimies).find(family => family.models.find(m => m === model));

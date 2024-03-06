@@ -3,7 +3,7 @@ import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
 import { fallBackModel, models, getModel, getOutput } from "../models.js";
 
-const rev = "v3.2.1";
+const rev = "v3.3.0";
 const isDev = false;
 
 const commandList = [
@@ -28,7 +28,7 @@ const commandList = [
             Object.values(models).filter(model => !model.hidden).map(model => {return {
                 "name": model.short_name,
                 "alias": model.alias,
-                "description": `${model.getFamily().name}の${model.short_name}モデルを利用します。現在のモデルは[${model.name}](${model.info_url})です。`
+                "description": (model == fallBackModel ? "(デフォルト) " : "") + `${model.getFamily().name}の${model.short_name}モデルを利用します。現在のモデルは[${model.name}](${model.info_url})です。`
             }}),
         hasOption: true
     },
@@ -57,7 +57,8 @@ const releaseNote = [
     "v2.1.0\tテキストファイルの読み込みに対応しました。",
     "v3.0.0\tLangChainを利用する形式に処理を変更し、使用可能なモデルを拡張しました。",
     "v3.1.0\twatsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）",
-    "v3.2.0\t大きい画像を添付した際に、自動で圧縮するようになりました。"
+    "v3.2.0\t大きい画像を添付した際に、自動で圧縮するようになりました。",
+    "v3.3.0\tAnthoropicのClaude3モデルを追加しました。"
 ]
 
 export default {
@@ -95,9 +96,7 @@ export default {
         }
 
         let dialog = [];
-        const youbi = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-        const time = new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000));
-        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. The current time is ${youbi[time.getDay()]}, ${time.getMonth() + 1}/${time.getDate()}, ${time.getFullYear()}. The time is ${time.getHours()}:${time.getMinutes()}. Response is presented in markdown format`;
+        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. If your responses are complex and require structured output, then output them in markdown format.`;
         dialog.push(new SystemMessage(initText));
 
         lastId = message.id;
