@@ -4,12 +4,17 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
+const parser = new StringOutputParser();
 
 export class ModelFamily {
-    constructor(name, create_llm, models) {
+    constructor(name, create_llm, models, {is_stream_support = false, chat = true} = {}) {
         this.name = name;
         this.create_llm = create_llm;
         this.models = models;
+        this.is_stream_support = is_stream_support;
+        this.chat = chat;
     }
 
     createLlm(model = null) {
@@ -23,7 +28,7 @@ export class ModelFamily {
 }
 
 export class Model {
-    constructor(name, short_name, alias, info_url, max_input_token_length, max_output_token_length, {is_multimodal_supported = false, chat_model = true, hidden = false} = {}) {
+    constructor(name, short_name, alias, info_url, max_input_token_length, max_output_token_length, {is_multimodal_supported = false, hidden = false} = {}) {
         this.name = name;
         this.short_name = short_name;
         this.alias = alias;
@@ -31,7 +36,6 @@ export class Model {
         this.max_input_token_length = max_input_token_length;
         this.max_output_token_length = max_output_token_length;
         this.is_multimodal_supported = is_multimodal_supported;
-        this.chat_model = chat_model;
         this.hidden = hidden;
     }
 
@@ -115,8 +119,7 @@ export const models = {
         ["granite", "granite-jp", "granite-8b-japanese", "granite-japanese"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#granite-8b-japanese",
         8192,
-        4096,
-        {chat_model: false}
+        4096
     ),
     elyza: new Model(
         "elyza/elyza-japanese-llama-2-7b-instruct",
@@ -124,8 +127,7 @@ export const models = {
         ["elyza", "elyza-jp", "elyza-2-7b"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#elyza-japanese-llama-2-7b-instruct",
         4096,
-        4096,
-        {chat_model: false}
+        4096
     ),
     llama2: new Model(
         "meta-llama/llama-2-70b-chat",
@@ -133,8 +135,7 @@ export const models = {
         ["llama2", "llama-2", "llama-2-70b", "llama-2-70b-chat"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#llama-2",
         4096,
-        4096,
-        {chat_model: false}
+        4096
     ),
     mixtral8x7b: new Model(
         "ibm-mistralai/mixtral-8x7b-instruct-v01-q",
@@ -142,8 +143,7 @@ export const models = {
         ["mixtral", "mixtral-8x7b", "mixtral-8x7b-instruct-v01-q"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#mixtral-8x7b",
         4096,
-        4096,
-        {chat_model: false}
+        4096
     ),
 }
 
@@ -159,7 +159,8 @@ export const modelfalimies = {
             models.gpt3,
             models.gpt4,
             models.gpt4_vision
-        ]
+        ],
+        {is_stream_support: true}
     ),
     google: new ModelFamily(
         "google", 
@@ -171,7 +172,8 @@ export const modelfalimies = {
             models.gemini,
             models.gemini1_5,
             models.gemini_pro_vision
-        ]
+        ],
+        {is_stream_support: true}
     ),
     anthropic: new ModelFamily(
         "anthropic",
@@ -182,7 +184,8 @@ export const modelfalimies = {
         [
             models.claude3_opus,
             models.claude3_sonnet
-        ]
+        ],
+        {is_stream_support: true}
     ),
     watsonx: new ModelFamily(
         "watsonx",
@@ -203,7 +206,8 @@ export const modelfalimies = {
             models.elyza,
             models.llama2,
             models.mixtral8x7b
-        ]
+        ],
+        {chat: false}
     )
 };
 
@@ -240,10 +244,10 @@ export const getOutput = async (model, dialog) => {
     const family = getFamily(model);
     const llm = family.createLlm(model);
 
-    if (model.chat_model) {
+    if (family.chat) {
         const prompt = ChatPromptTemplate.fromMessages(dialog);
-        const chain = prompt.pipe(llm);
-        return (await chain.invoke({})).content;
+        const chain = prompt.pipe(llm).pipe(parser);
+        return await chain.invoke({});
     } else {
         let prompt = "[INST]\n" + dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
             if (d instanceof SystemMessage)
@@ -256,5 +260,29 @@ export const getOutput = async (model, dialog) => {
         prompt += "\n[/INST]\nassistant: "
         console.log(prompt)
         return await llm.invoke(prompt);
+    }
+}
+
+export const getOutputStream = async (model, dialog) => {
+    const family = getFamily(model);
+    if (family.is_stream_support === false) {
+        throw new Error(`Model ${model.name} does not support stream`);
+    }
+
+    const llm = family.createLlm(model);
+    if (family.chat) {
+        const prompt = ChatPromptTemplate.fromMessages(dialog);
+        return await prompt.pipe(llm).pipe(parser).stream({})
+    } else {
+        let prompt = "[INST]\n" + dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
+            if (d instanceof SystemMessage)
+                return `${d.content}\n\n-------------------latest conversation-------------------\n\n`
+            if (d instanceof HumanMessage)
+                return `user: ${d.content}`
+            if (d instanceof AIMessage)
+                return `assistant: ${d.content}`
+        }).join("\n")
+        prompt += "\n[/INST]\nassistant: "
+        return await llm.pipe(parser).stream(prompt)
     }
 }

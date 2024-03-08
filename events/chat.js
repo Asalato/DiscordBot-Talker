@@ -1,9 +1,9 @@
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
-import { fallBackModel, models, getModel, getOutput } from "../models.js";
+import { fallBackModel, models, getModel, getOutput, getOutputStream } from "../models.js";
 
-const rev = "v3.3.0";
+const rev = "v3.4.1";
 const isDev = false;
 
 const commandList = [
@@ -58,7 +58,8 @@ const releaseNote = [
     "v3.0.0\tLangChainを利用する形式に処理を変更し、使用可能なモデルを拡張しました。",
     "v3.1.0\twatsonx.aiモデルを呼べるようにしました。（ChatModelではないため、精度の低下が見込まれます。）",
     "v3.2.0\t大きい画像を添付した際に、自動で圧縮するようになりました。",
-    "v3.3.0\tAnthoropicのClaude3モデルを追加しました。"
+    "v3.3.0\tAnthoropicのClaude3モデルを追加しました。",
+    "v3.4.0\tストリーミング対応のモデルについて、逐次メッセージの送信を行うようにしました。"
 ]
 
 export default {
@@ -96,7 +97,14 @@ export default {
         }
 
         let dialog = [];
-        const initText = `The following is a conversation with an AI assistant (you). The assistant is helpful, creative, clever, and very friendly.\nYour name is "${client.user.username}" and you are running as a Bot on Discord. If your responses are complex and require structured output, then output them in markdown format.`;
+        const initText = `The following is a conversation with an AI assistant (you).
+You are the smartest AI in the world. You have accurate knowledge of everything that is asked of you, and you can answer without error.
+And, you respond to human inquiries in a kind, courteous, and patient manner. 
+(Specifically, if a prerequisite is unclear in resolving a question, you ask additional questions, etc.)
+Your name is "${client.user.username}" and you are running as a Bot on Discord.
+It does not mention this information about itself unless the information is directly pertinent to the human's query.
+Your reply will be rendered using the markdown parser. 
+If you need to format replies for clarity, emphasis, or program code, output them in markdown format.`;
         dialog.push(new SystemMessage(initText));
 
         lastId = message.id;
@@ -169,21 +177,75 @@ export default {
 
         if (!isBotMentioned || isModeDiff) return false;
 
-        await message.channel.sendTyping();
-        const typing = setInterval(async () => {
-            await message.channel.sendTyping();
-        }, 1000);
-        
+        let intervalEvent = null;
         try {
             const model = getModel(model_name, isImageAttached);
-            const response = await getOutput(model, dialog);
-            clearInterval(typing);
-            const split = utils.splitText(response);
-            for (let i = 0; i < split.length; ++i) {
-                await message.reply(split[i])
+            const is_stream_support = model.getFamily().is_stream_support;
+
+            if (is_stream_support) {
+                let response = "";
+                let lastResponse = "";
+                let replyMessage = null;
+                const reply = async () => {
+                    try {
+                        if (lastResponse !== "" && lastResponse === response) return;
+                        if (response === "") return;
+
+                        const split = utils.splitText(response);
+                        const lastSplit = utils.splitText(response);
+                        if (lastSplit.length === split.length) {
+                            if (replyMessage === null) {
+                                replyMessage = await message.reply(split[split.length - 1]);
+                            } else {
+                                await replyMessage.edit(split[split.length - 1]);
+                            }
+                        } else {
+                            if (replyMessage !== null && lastSplit[lastSplit.length - 1] !== split[lastSplit.length - 1]) {
+                                await replyMessage.edit(split[lastSplit.length - 1]);
+                            }
+                            for (let i = lastSplit.length; i < split.length; ++i) {
+                                if (replyMessage === null) {
+                                    replyMessage = await message.reply(split[i]);
+                                } else {
+                                    replyMessage = await replyMessage.reply(split[i]);
+                                }
+                            }
+                        }
+
+                        lastResponse = response;
+                    } catch (err) {
+                        console.log(err);
+                        clearInterval(intervalEvent);
+                        if (replyMessage !== null) await replyMessage.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
+                        else await message.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
+                    }
+                }
+
+                intervalEvent = setInterval(async () => await reply(), 1500);
+                for await (const chunk of await getOutputStream(model, dialog)) {response += chunk}
+                clearInterval(intervalEvent);
+                if (response.length === 0) {
+                    await message.reply("```diff\n-何らかの問題が発生しました。\n```");
+                } else {
+                    await reply();
+                }
+            } else {
+                await message.channel.sendTyping();
+                intervalEvent = setInterval(async () => await message.channel.sendTyping(), 1000);
+
+                const response = await getOutput(model, dialog);
+                if (response.length === 0) {
+                    clearInterval(typing);
+                    await message.reply("```diff\n-何らかの問題が発生しました。\n```");
+                    return;
+                }
+
+                clearInterval(intervalEvent);
+                const split = utils.splitText(response);
+                for (let i = 0; i < split.length; ++i) { await message.reply(split[i]) }
             }
         } catch (err) {
-            clearInterval(typing);
+            if (intervalEvent !== null) clearInterval(intervalEvent);
             console.log(err);
             await message.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
         }
