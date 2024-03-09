@@ -197,14 +197,14 @@ If you need to format replies for clarity, emphasis, or program code, output the
                         const lastSplit = utils.splitText(lastResponse);
                         if (lastSplit.length === split.length) {
                             if (replyMessage !== null) await replyMessage.edit(split[split.length - 1]);
-                            replyMessage = await message.reply(split[split.length - 1]);
+                            else replyMessage = await message.reply(split[split.length - 1]);
                         } else {
                             if (replyMessage !== null && lastSplit[lastSplit.length - 1] !== split[lastSplit.length - 1]) {
                                 await replyMessage.edit(split[lastSplit.length - 1]);
                             }
                             for (let i = lastSplit.length; i < split.length; ++i) {
                                 if (replyMessage !== null) await replyMessage.edit(split[i]);
-                                replyMessage = await message.reply(split[i]);
+                                else replyMessage = await message.reply(split[i]);
                             }
                         }
 
