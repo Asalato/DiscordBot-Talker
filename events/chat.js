@@ -1,9 +1,9 @@
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
-import { fallBackModel, models, getModel, getOutput, getOutputStream } from "../models.js";
+import { fallBackModel, models, getModel, getOutput, getOutputStream, getFamily } from "../models.js";
 
-const rev = "v3.4.1";
+const rev = "v3.4.2";
 const isDev = false;
 
 const commandList = [
@@ -67,6 +67,7 @@ export default {
     once: false,
     async execute(client, message) {
         if (message.mentions.users.size > 0 && !message.mentions.has(client.user)) return false;
+        if (message.author === client.user) return false;
 
         const messages = message.channel.messages;
         let lastId = message.id;
@@ -176,11 +177,12 @@ If you need to format replies for clarity, emphasis, or program code, output the
         }
 
         if (!isBotMentioned || isModeDiff) return false;
-
+        
+        await message.channel.sendTyping()
         let intervalEvent = null;
         try {
             const model = getModel(model_name, isImageAttached);
-            const is_stream_support = model.getFamily().is_stream_support;
+            const is_stream_support = getFamily(model).is_stream_support;
 
             if (is_stream_support) {
                 let response = "";
@@ -192,23 +194,17 @@ If you need to format replies for clarity, emphasis, or program code, output the
                         if (response === "") return;
 
                         const split = utils.splitText(response);
-                        const lastSplit = utils.splitText(response);
+                        const lastSplit = utils.splitText(lastResponse);
                         if (lastSplit.length === split.length) {
-                            if (replyMessage === null) {
-                                replyMessage = await message.reply(split[split.length - 1]);
-                            } else {
-                                await replyMessage.edit(split[split.length - 1]);
-                            }
+                            if (replyMessage !== null) await replyMessage.edit(split[split.length - 1]);
+                            replyMessage = await message.reply(split[split.length - 1]);
                         } else {
                             if (replyMessage !== null && lastSplit[lastSplit.length - 1] !== split[lastSplit.length - 1]) {
                                 await replyMessage.edit(split[lastSplit.length - 1]);
                             }
                             for (let i = lastSplit.length; i < split.length; ++i) {
-                                if (replyMessage === null) {
-                                    replyMessage = await message.reply(split[i]);
-                                } else {
-                                    replyMessage = await replyMessage.reply(split[i]);
-                                }
+                                if (replyMessage !== null) await replyMessage.edit(split[i]);
+                                replyMessage = await message.reply(split[i]);
                             }
                         }
 
@@ -216,13 +212,17 @@ If you need to format replies for clarity, emphasis, or program code, output the
                     } catch (err) {
                         console.log(err);
                         clearInterval(intervalEvent);
-                        if (replyMessage !== null) await replyMessage.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
-                        else await message.reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
+                        await (replyMessage ?? message).reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
                     }
                 }
 
-                intervalEvent = setInterval(async () => await reply(), 1500);
-                for await (const chunk of await getOutputStream(model, dialog)) {response += chunk}
+                for await (const chunk of await getOutputStream(model, dialog)) {
+                    response += chunk;
+                    if (intervalEvent === null){
+                        intervalEvent = setInterval(async () => await reply(), 1500);
+                        await reply();
+                    }
+                }
                 clearInterval(intervalEvent);
                 if (response.length === 0) {
                     await message.reply("```diff\n-何らかの問題が発生しました。\n```");
@@ -230,7 +230,6 @@ If you need to format replies for clarity, emphasis, or program code, output the
                     await reply();
                 }
             } else {
-                await message.channel.sendTyping();
                 intervalEvent = setInterval(async () => await message.channel.sendTyping(), 1000);
 
                 const response = await getOutput(model, dialog);

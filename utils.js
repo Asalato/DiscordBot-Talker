@@ -56,31 +56,22 @@ export default {
         return commands.commands.filter(c => c.command === command).filter(c => param === undefined || c.parameter === param).length !== 0
     },
     splitText: function (text) {
-        const maxLength = 2000;
-
-        const result = [];
-
-        // 暫定的に、改行文字で分割
-        const split = text.split("\n");
-
         // splitした結果を2000文字を超えない範囲で結合し、resultに追加
-        let current = "";
-        for (let i = 0; i < split.length; ++i) {
-            let chunk = split[i];
-            if (current.length + chunk.length > maxLength) {
+        const maxLength = 2000;
+        const result = [];
+        for (const chunk of text.split("\n")) {
+            let current = (result.pop() || "") + chunk + "\n";
+            if (current.length < maxLength) {
                 result.push(current);
-                current = "";
+            } else {
+                // splitした結果が単体で2000文字を超える場合は、超過しなくなるまでresultに追加
+                while (current.length > maxLength) {
+                    result.push(current.substring(0, maxLength));
+                    current = current.substring(maxLength);
+                }
+                result.push(current);
             }
-
-            // splitした結果が単体で2000文字を超える場合は、超過しなくなるまでresultに追加
-            while (chunk.length > maxLength) {
-                result.push(chunk.substring(0, maxLength));
-                chunk = chunk.substring(maxLength);
-            }
-
-            current += chunk + "\n";
         }
-        result.push(current);
 
         // 各ブロックを検査し、中に「```(\w+)\n」でマッチされる行が奇数個存在した場合、そのブロックの末尾に「```」を追加
         // また、「(\w)+」でマッチされる、コードブロックの言語名を変数に格納し、次ブロックの先頭に「```${lang_name}\n」を追加
