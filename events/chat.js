@@ -182,7 +182,8 @@ If you need to format replies for clarity, emphasis, or program code, output the
         let intervalEvent = null;
         try {
             const model = getModel(model_name, isImageAttached);
-            const is_stream_support = getFamily(model).is_stream_support;
+            //const is_stream_support = getFamily(model).is_stream_support;
+            const is_stream_support = false;
 
             if (is_stream_support) {
                 let response = "";
@@ -192,9 +193,9 @@ If you need to format replies for clarity, emphasis, or program code, output the
                     try {
                         if (lastResponse !== "" && lastResponse === response) return;
                         if (response === "") return;
-
+                        
                         const split = utils.splitText(response);
-                        const lastSplit = utils.splitText(lastResponse);
+                        const lastSplit = lastResponse === "" ? [] : utils.splitText(lastResponse);
                         if (lastSplit.length === split.length) {
                             if (replyMessage !== null) await replyMessage.edit(split[split.length - 1]);
                             else replyMessage = await message.reply(split[split.length - 1]);
@@ -210,7 +211,7 @@ If you need to format replies for clarity, emphasis, or program code, output the
 
                         lastResponse = response;
                     } catch (err) {
-                        console.log(err);
+                        console.error(err);
                         clearInterval(intervalEvent);
                         await (replyMessage ?? message).reply("```diff\n-何らかの問題が発生しました。\n" + err + "```");
                     }
