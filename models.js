@@ -113,6 +113,15 @@ export const models = {
         4096,
         {is_multimodal_supported: true}
     ),
+    claide3_haiku: new Model(
+        "claude-3-haiku-20240307",
+        "claude3-haiku",
+        ["haiku", "claude3-haiku", "claude-3-haiku", "claude-haiku"],
+        "https://www.anthropic.com/news/claude-3-family",
+        200000,
+        4096,
+        {is_multimodal_supported: true}
+    ),
     granite_8b_japanese: new Model(
         "ibm/granite-8b-japanese",
         "granite",
@@ -183,7 +192,8 @@ export const modelfalimies = {
         }),
         [
             models.claude3_opus,
-            models.claude3_sonnet
+            models.claude3_sonnet,
+            models.claide3_haiku
         ],
         {is_stream_support: true}
     ),
@@ -211,7 +221,7 @@ export const modelfalimies = {
     )
 };
 
-export const fallBackModel = models.claude3_sonnet;
+export const fallBackModel = models.claide3_haiku;
 
 export const getFamily = (model) => {
     const family = Object.values(modelfalimies).find(family => family.models.find(m => m === model));
@@ -251,11 +261,11 @@ export const getOutput = async (model, dialog) => {
     } else {
         let prompt = "[INST]\n" + dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
             if (d instanceof SystemMessage)
-                return `${d.content}\n\n-------------------latest conversation-------------------\n\n`
+                return `<<SYS>>\n${d.content}\n<</SYS>>\n`
             if (d instanceof HumanMessage)
-                return `user: ${d.content}`
+                return `user: ${d.content}\n`
             if (d instanceof AIMessage)
-                return `assistant: ${d.content}`
+                return `assistant: ${d.content}\n`
         }).join("\n")
         prompt += "\n[/INST]\nassistant: "
         console.log(prompt)
