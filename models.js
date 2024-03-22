@@ -113,7 +113,7 @@ export const models = {
         4096,
         {is_multimodal_supported: true}
     ),
-    claide3_haiku: new Model(
+    claude3_haiku: new Model(
         "claude-3-haiku-20240307",
         "claude3-haiku",
         ["haiku", "claude3-haiku", "claude-3-haiku", "claude-haiku"],
@@ -193,7 +193,7 @@ export const modelfalimies = {
         [
             models.claude3_opus,
             models.claude3_sonnet,
-            models.claide3_haiku
+            models.claude3_haiku
         ],
         {is_stream_support: true}
     ),
@@ -221,7 +221,7 @@ export const modelfalimies = {
     )
 };
 
-export const fallBackModel = models.claide3_haiku;
+export const fallBackModel = models.claude3_sonnet;
 
 export const getFamily = (model) => {
     const family = Object.values(modelfalimies).find(family => family.models.find(m => m === model));
