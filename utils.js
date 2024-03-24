@@ -57,7 +57,7 @@ export default {
     },
     splitText: function (text) {
         // splitした結果を2000文字を超えない範囲で結合し、resultに追加
-        const maxLength = 2000;
+        const maxLength = 1900;
         const result = [];
         for (const chunk of text.split("\n")) {
             let current = (result.pop() || "") + chunk + "\n";
