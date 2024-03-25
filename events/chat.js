@@ -182,8 +182,8 @@ If you need to format replies for clarity, emphasis, or program code, output the
         let intervalEvent = null;
         try {
             const model = getModel(model_name, isImageAttached);
-            const is_stream_support = getFamily(model).is_stream_support;
-            //const is_stream_support = false;
+            //const is_stream_support = getFamily(model).is_stream_support;
+            const is_stream_support = false;
 
             if (is_stream_support) {
                 let response = "";
