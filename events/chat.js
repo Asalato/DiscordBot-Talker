@@ -3,7 +3,7 @@ import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
 import { fallBackModel, models, getModel, getOutput, getOutputStream, getFamily } from "../models.js";
 
-const rev = "v3.4.3";
+const rev = "v3.4.4";
 const isDev = false;
 
 const commandList = [
@@ -111,6 +111,7 @@ If you need to format replies for clarity, emphasis, or program code, output the
         lastId = message.id;
         let isBotMentioned = utils.isMentioned(client, message);
         
+        let model_name_changed = false;
         let model_name = fallBackModel.name;
         let isImageAttached = false;
         while(true) {
@@ -126,8 +127,9 @@ If you need to format replies for clarity, emphasis, or program code, output the
             const initMsg = commands.commands.filter(c => c.command === "!init");
             if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
-            if (utils.containsCommand(commands, "!model")) {
+            if (utils.containsCommand(commands, "!model") and !model_name_changed) {
                 model_name = commands.commands.filter(c => c.command === "!model")[0].parameter; 
+                model_name_changed = true;
             }
 
             const message = utils.replaceMentionsWithUsernames(lastMessage.mentions, commands.message);
