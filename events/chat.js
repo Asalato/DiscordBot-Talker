@@ -127,7 +127,7 @@ If you need to format replies for clarity, emphasis, or program code, output the
             const initMsg = commands.commands.filter(c => c.command === "!init");
             if (initMsg.length !== 0) dialog[0].content = initMsg[0].parameter.replace("\"", "");
 
-            if (utils.containsCommand(commands, "!model") and !model_name_changed) {
+            if (utils.containsCommand(commands, "!model") && !model_name_changed) {
                 model_name = commands.commands.filter(c => c.command === "!model")[0].parameter; 
                 model_name_changed = true;
             }
