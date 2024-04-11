@@ -54,21 +54,13 @@ export const models = {
         4096
     ),
     gpt4: new Model(
-        "gpt-4-turbo-preview", 
+        "gpt-4-turbo", 
         "gpt4", 
-        ["gpt-4", "gpt-4-turbo", "gpt-4-preview", "gpt-4-turbo-preview"], 
-        "https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo",
-        128000,
-        4096
-    ),
-    gpt4_vision: new Model(
-        "gpt-4-vision-preview", 
-        "gpt4-vision", 
-        ["gpt-4-vision", "gpt-4-vision-preview"],
+        ["gpt-4", "gpt-4-turbo", "gpt-4-vision"], 
         "https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo",
         128000,
         4096,
-        {hidden: true, is_multimodal_supported: true}
+        {is_multimodal_supported: true}
     ),
     gemini: new Model(
         "gemini-1.0-pro-latest", 
@@ -166,8 +158,7 @@ export const modelfalimies = {
         }), 
         [
             models.gpt3,
-            models.gpt4,
-            models.gpt4_vision
+            models.gpt4
         ],
         {is_stream_support: true}
     ),
