@@ -138,6 +138,14 @@ export const models = {
         4096,
         4096
     ),
+    llama3: new Model(
+        "meta-llama/llama-3-70b-instruct",
+        "llama3",
+        ["llama3", "llama-3", "llama-3-70b", "llama-3-70b-instruct"],
+        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#llama-2",
+        8192,
+        4096
+    ),
     mixtral8x7b: new Model(
         "ibm-mistralai/mixtral-8x7b-instruct-v01-q",
         "mixtral",
@@ -206,6 +214,7 @@ export const modelfalimies = {
             models.granite_8b_japanese,
             models.elyza,
             models.llama2,
+            models.llama3,
             models.mixtral8x7b
         ],
         {chat: false}
@@ -275,15 +284,15 @@ export const getOutputStream = async (model, dialog) => {
         const prompt = ChatPromptTemplate.fromMessages(dialog);
         return await prompt.pipe(llm).pipe(parser).stream({})
     } else {
-        let prompt = "[INST]\n" + dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
+        let prompt = dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
             if (d instanceof SystemMessage)
-                return `${d.content}\n\n-------------------latest conversation-------------------\n\n`
+                return `${d.content}\n\n------------------- chat history -------------------\n\n`
             if (d instanceof HumanMessage)
-                return `user: ${d.content}`
+                return `User: ${d.content}`
             if (d instanceof AIMessage)
-                return `assistant: ${d.content}`
-        }).join("\n")
-        prompt += "\n[/INST]\nassistant: "
+                return `Assistant: ${d.content}`
+        }).join("\n\n")
+        prompt += "\n\nassistant: "
         return await llm.pipe(parser).stream(prompt)
     }
 }
