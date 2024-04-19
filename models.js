@@ -259,16 +259,20 @@ export const getOutput = async (model, dialog) => {
         const chain = prompt.pipe(llm).pipe(parser);
         return await chain.invoke({});
     } else {
-        let prompt = "[INST]\n" + dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
+        let prompt = dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
+            let content = d.content;
+            if (Array.isArray(content)) {
+                content = content.map(c => c.text).join("\n");
+            }
+
             if (d instanceof SystemMessage)
-                return `<<SYS>>\n${d.content}\n<</SYS>>\n`
+                return `${content}\n\n------------------- chat history -------------------`
             if (d instanceof HumanMessage)
-                return `user: ${d.content}\n`
+                return `User: ${content}`
             if (d instanceof AIMessage)
-                return `assistant: ${d.content}\n`
-        }).join("\n")
-        prompt += "\n[/INST]\nassistant: "
-        console.log(prompt)
+                return `Assistant: ${content}`
+        }).join("\n\n")
+        prompt += "\n\nAssistant: "
         return await llm.invoke(prompt);
     }
 }
@@ -285,12 +289,17 @@ export const getOutputStream = async (model, dialog) => {
         return await prompt.pipe(llm).pipe(parser).stream({})
     } else {
         let prompt = dialog.filter(d => !d.content.type || d.content.type !== "image_url").map(d => {
+            let content = d.content;
+            if (Array.isArray(content)) {
+                content = content.map(c => c.text).join("\n");
+            }
+
             if (d instanceof SystemMessage)
-                return `${d.content}\n\n------------------- chat history -------------------\n\n`
+                return `${content}\n\n------------------- chat history -------------------`
             if (d instanceof HumanMessage)
-                return `User: ${d.content}`
+                return `User: ${content}`
             if (d instanceof AIMessage)
-                return `Assistant: ${d.content}`
+                return `Assistant: ${content}`
         }).join("\n\n")
         prompt += "\n\nassistant: "
         return await llm.pipe(parser).stream(prompt)

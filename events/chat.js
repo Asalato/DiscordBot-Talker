@@ -3,7 +3,7 @@ import utils from "../utils.js";
 import ipu from "../imageProcessingUtils.js";
 import { fallBackModel, models, getModel, getOutput, getOutputStream, getFamily } from "../models.js";
 
-const rev = "v3.4.4";
+const rev = "v3.5.0";
 const isDev = false;
 
 const commandList = [
@@ -105,7 +105,8 @@ And, you respond to human inquiries in a kind, courteous, and patient manner.
 Your name is "${client.user.username}" and you are running as a Bot on Discord.
 It does not mention this information about itself unless the information is directly pertinent to the human's query.
 Your reply will be rendered using the markdown parser. 
-If you need to format replies for clarity, emphasis, or program code, output them in markdown format.`;
+If you need to format replies for clarity, emphasis, or program code, output them in markdown format.
+**To be a considerate assistant, you must respond in the same language as the user's utterance.**`;
         dialog.push(new SystemMessage(initText));
 
         lastId = message.id;
