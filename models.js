@@ -62,6 +62,15 @@ export const models = {
         4096,
         {is_multimodal_supported: true}
     ),
+    gpt4o: new Model(
+        "gpt-4o",
+        "gpt4o",
+        [],
+        "https://platform.openai.com/docs/models/gpt-4o",
+        128000,
+        4096,
+        {is_multimodal_supported: true}
+    ),
     gemini: new Model(
         "gemini-1.0-pro-latest", 
         "gemini",
@@ -166,7 +175,8 @@ export const modelfalimies = {
         }), 
         [
             models.gpt3,
-            models.gpt4
+            models.gpt4,
+            models.gpt4o
         ],
         {is_stream_support: true}
     ),
@@ -221,7 +231,7 @@ export const modelfalimies = {
     )
 };
 
-export const fallBackModel = models.claude3_sonnet;
+export const fallBackModel = models.gpt4o;
 
 export const getFamily = (model) => {
     const family = Object.values(modelfalimies).find(family => family.models.find(m => m === model));
