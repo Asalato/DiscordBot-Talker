@@ -108,7 +108,16 @@ export const models = {
     claude3_sonnet: new Model(
         "claude-3-sonnet-20240229",
         "claude3-sonnet",
-        ["sonnet", "claude3-sonnet", "claude-3-sonnet", "claude-sonnet", "claude-3", "claude", "anthropic", "claude3"],
+        ["claude3-sonnet", "claude-3-sonnet", "claude-sonnet"],
+        "https://www.anthropic.com/news/claude-3-family",
+        200000,
+        4096,
+        {is_multimodal_supported: true}
+    ),
+    claude35_sonnet: new Model(
+        "claude-3-5-sonnet-20240620",
+        "claude35-sonnet",
+        ["sonnet", "claude35-sonnet", "claude-3.5-sonnet", "claude-sonnet", "claude-3.5", "claude35"],
         "https://www.anthropic.com/news/claude-3-family",
         200000,
         4096,
@@ -202,6 +211,7 @@ export const modelfalimies = {
         [
             models.claude3_opus,
             models.claude3_sonnet,
+            models.claude35_sonnet,
             models.claude3_haiku
         ],
         {is_stream_support: true}
@@ -231,7 +241,7 @@ export const modelfalimies = {
     )
 };
 
-export const fallBackModel = models.gpt4o;
+export const fallBackModel = models.claude35_sonnet;
 
 export const getFamily = (model) => {
     const family = Object.values(modelfalimies).find(family => family.models.find(m => m === model));
