@@ -189,6 +189,21 @@ If you need to format replies for clarity, emphasis, or program code, output the
             //const is_stream_support = getFamily(model).is_stream_support;
             const is_stream_support = false;
 
+            if (!model.system_message_enabled) {
+                // すべてのシステムメッセージをユーザプロンプトに変換
+                dialog = dialog.map(d => {
+                    if (d instanceof SystemMessage) {
+                        return new HumanMessage({content: [
+                            {
+                                type: "text",
+                                text: d.content
+                            }
+                        ]});
+                    }
+                    return d;
+                });                
+            }
+
             if (is_stream_support) {
                 let response = "";
                 let lastResponse = "";

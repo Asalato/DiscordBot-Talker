@@ -28,7 +28,7 @@ export class ModelFamily {
 }
 
 export class Model {
-    constructor(name, short_name, alias, info_url, max_input_token_length, max_output_token_length, {is_multimodal_supported = false, hidden = false} = {}) {
+    constructor(name, short_name, alias, info_url, max_input_token_length, max_output_token_length, {is_multimodal_supported = false, hidden = false, system_message_enabled = true} = {}) {
         this.name = name;
         this.short_name = short_name;
         this.alias = alias;
@@ -37,6 +37,7 @@ export class Model {
         this.max_output_token_length = max_output_token_length;
         this.is_multimodal_supported = is_multimodal_supported;
         this.hidden = hidden;
+        this.system_message_enabled = system_message_enabled;
     }
 
     getFamily() {
@@ -45,56 +46,50 @@ export class Model {
 }
 
 export const models = {
-    gpt3: new Model(
-        "gpt-3.5-turbo", 
-        "gpt3",
-        ["gpt-3", "gpt-3.5", "gpt-3-turbo", "gpt-3.5-turbo"], 
-        "https://platform.openai.com/docs/models/gpt-3-5",
-        16385,
-        4096
-    ),
-    gpt4: new Model(
-        "gpt-4-turbo", 
-        "gpt4", 
-        ["gpt-4", "gpt-4-turbo", "gpt-4-vision"], 
-        "https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo",
-        128000,
-        4096,
-        {is_multimodal_supported: true}
-    ),
     gpt4o: new Model(
         "gpt-4o",
         "gpt4o",
         [],
-        "https://platform.openai.com/docs/models/gpt-4o",
+        "https://platform.openai.com/docs/models#gpt-4o",
         128000,
+        16384,
+        {is_multimodal_supported: true}
+    ),
+    o1_preview: new Model(
+        "o1-preview",
+        "o1-preview",
+        ["o1"],
+        "https://platform.openai.com/docs/models#o1",
+        128000,
+        32768,
+        {system_message_enabled: false}
+    ),
+    o1_mini: new Model(
+        "o1-mini",
+        "o1-mini",
+        [],
+        "https://platform.openai.com/docs/models#o1",
+        128000,
+        32768,
+        {system_message_enabled: false}
+    ),
+    gemini15_flash: new Model(
+        "gemini-1.5-flash-latest",
+        "gemini15-flash",
+        ["flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-flash"],
+        "https://deepmind.google/technologies/gemini/#gemini-1.5",
+        30720,
         4096,
         {is_multimodal_supported: true}
     ),
-    gemini: new Model(
-        "gemini-1.0-pro-latest", 
-        "gemini",
-        ["gemini-1.0", "gemini-1", "gemini-1.0-pro", "gemini-1-pro", "gemini-pro-lastest", "gemini-pro"], 
-        "https://deepmind.google/technologies/gemini/#gemini-1.0",
-        30720,
-        4096
-    ),
-    gemini1_5: new Model(
+    gemini15_pro: new Model(
         "gemini-1.5-pro-latest", 
         "gemini1.5", 
-        ["gemini-1.5", "gemini-1.5-pro", "gemini-pro-latest", "gemini-pro"],
+        ["gemini", "gemini-1.5", "gemini-1.5-pro", "gemini-pro-latest", "gemini-pro"],
         "https://deepmind.google/technologies/gemini/#gemini-1.5",
         30720,
-        4096
-    ),
-    gemini_pro_vision: new Model(
-        "gemini-pro-vision", 
-        "gemini-vision",
-        ["gemini-pro-vision"], 
-        "https://deepmind.google/technologies/gemini/#gemini-1.0",
-        12288,
         4096,
-        {hidden: true, is_multimodal_supported: true}
+        {is_multimodal_supported: true}
     ),
     claude3_opus: new Model(
         "claude-3-opus-20240229", 
@@ -105,71 +100,38 @@ export const models = {
         4096,
         {is_multimodal_supported: true}
     ),
-    claude3_sonnet: new Model(
-        "claude-3-sonnet-20240229",
-        "claude3-sonnet",
-        ["claude3-sonnet", "claude-3-sonnet", "claude-sonnet"],
-        "https://www.anthropic.com/news/claude-3-family",
-        200000,
-        4096,
-        {is_multimodal_supported: true}
-    ),
     claude35_sonnet: new Model(
-        "claude-3-5-sonnet-20240620",
+        "claude-3-5-sonnet-latest",
         "claude35-sonnet",
-        ["sonnet", "claude35-sonnet", "claude-3.5-sonnet", "claude-sonnet", "claude-3.5", "claude35"],
+        ["claude", "sonnet", "claude35-sonnet", "claude-3.5-sonnet", "claude-sonnet", "claude-3.5", "claude35"],
         "https://www.anthropic.com/news/claude-3-family",
         200000,
         4096,
         {is_multimodal_supported: true}
     ),
     claude3_haiku: new Model(
-        "claude-3-haiku-20240307",
-        "claude3-haiku",
-        ["haiku", "claude3-haiku", "claude-3-haiku", "claude-haiku"],
+        "claude-3-5-haiku-latest",
+        "claude35-haiku",
+        ["haiku", "claude35-haiku", "claude-3.5-haiku", "claude-haiku"],
         "https://www.anthropic.com/news/claude-3-family",
         200000,
         4096,
         {is_multimodal_supported: true}
     ),
-    granite_8b_japanese: new Model(
-        "ibm/granite-8b-japanese",
-        "granite",
-        ["granite", "granite-jp", "granite-8b-japanese", "granite-japanese"],
-        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#granite-8b-japanese",
-        8192,
-        4096
-    ),
-    elyza: new Model(
-        "elyza/elyza-japanese-llama-2-7b-instruct",
-        "elyza",
-        ["elyza", "elyza-jp", "elyza-2-7b"],
-        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#elyza-japanese-llama-2-7b-instruct",
-        4096,
-        4096
-    ),
-    llama2: new Model(
-        "meta-llama/llama-2-70b-chat",
-        "llama2",
-        ["llama2", "llama-2", "llama-2-70b", "llama-2-70b-chat"],
-        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#llama-2",
-        4096,
-        4096
-    ),
     llama3: new Model(
-        "meta-llama/llama-3-70b-instruct",
+        "meta-llama/llama-3-3-70b-instruct",
         "llama3",
         ["llama3", "llama-3", "llama-3-70b", "llama-3-70b-instruct"],
         "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#llama-2",
-        8192,
+        128000,
         4096
     ),
-    mixtral8x7b: new Model(
-        "ibm-mistralai/mixtral-8x7b-instruct-v01-q",
-        "mixtral",
-        ["mixtral", "mixtral-8x7b", "mixtral-8x7b-instruct-v01-q"],
-        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#mixtral-8x7b",
-        4096,
+    mistral_large: new Model(
+        "mistral-large/mistral-large",
+        "mistral-large",
+        ["mistral-large", "mistral-large-instruct-v01-q"],
+        "https://jp-tok.dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx&audience=wdp#mistral-large",
+        128000,
         4096
     ),
 }
@@ -177,15 +139,22 @@ export const models = {
 export const modelfalimies = {
     openai: new ModelFamily(
         "openai", 
-        (model) => new ChatOpenAI({
-            openAIApiKey: process.env.OPENAI_SECRET_KEY,
-            modelName: model.name,
-            maxTokens: model.max_output_token_length
-        }), 
+        (model) => {
+            const config = {
+                openAIApiKey: process.env.OPENAI_SECRET_KEY,
+                modelName: model.name
+            };
+            if (model.name === "gpt-4o") {
+                config.maxTokens = model.max_output_token_length;
+            } else {
+                config.maxCompletionTokens = model.max_output_token_length;
+            }
+            return new ChatOpenAI(config);
+        }, 
         [
-            models.gpt3,
-            models.gpt4,
-            models.gpt4o
+            models.gpt4o,
+            models.o1_preview,
+            models.o1_mini
         ],
         {is_stream_support: true}
     ),
@@ -196,9 +165,8 @@ export const modelfalimies = {
             modelName: model.name
         }), 
         [
-            models.gemini,
-            models.gemini1_5,
-            models.gemini_pro_vision
+            models.gemini15_flash,
+            models.gemini15_pro
         ],
         {is_stream_support: true}
     ),
@@ -210,7 +178,6 @@ export const modelfalimies = {
         }),
         [
             models.claude3_opus,
-            models.claude3_sonnet,
             models.claude35_sonnet,
             models.claude3_haiku
         ],
@@ -231,11 +198,8 @@ export const modelfalimies = {
             }
         }),
         [
-            models.granite_8b_japanese,
-            models.elyza,
-            models.llama2,
             models.llama3,
-            models.mixtral8x7b
+            models.mistral_large
         ],
         {chat: false}
     )
