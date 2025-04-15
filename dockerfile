@@ -1,7 +1,4 @@
-FROM amazonlinux:2023
-
-RUN curl -sL https://rpm.nodesource.com/setup_22.x | bash -
-RUN yum install nodejs -y
+FROM node:22
 
 WORKDIR /usr/src/app
 
@@ -11,4 +8,6 @@ RUN npm install
 
 COPY . .
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node healthcheck.js || exit 1
 CMD [ "node", "server.js" ]

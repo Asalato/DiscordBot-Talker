@@ -4,6 +4,7 @@ import path from 'node:path';
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import register from "./register.js";
 import GuildStore from "./guildStore.js";
+import HealthCheckServer from './HealthCheckServer.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -39,6 +40,17 @@ for (const file of eventFiles) {
         }
     })
 }
+
+const healthCheck = new HealthCheckServer(client);
+
+client.once('ready', async () => {
+    try {
+        await healthCheck.start();
+        console.log('Health check server started');
+    } catch (error) {
+        console.error('Failed to start health check server:', error);
+    }
+});
 
 client.on('interactionCreate', async interaction => {
     const command = client.commands.get(interaction.commandName);
